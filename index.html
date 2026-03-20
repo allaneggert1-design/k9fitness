@@ -1560,13 +1560,18 @@ function checkAnamnese(){
 // ─── 14. MODO OFFLINE ────────────────────────────────────────────────────────
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator))return;
-  const sw=`const C='k9v2';const A=['${location.href}'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A).catch(()=>{})));self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('supabase'))return;
-e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;}).catch(()=>caches.match(e.request).then(r=>r||new Response('<html><body style="font-family:sans-serif;text-align:center;padding:40px;background:#0C0C0C;color:#F0F0F0"><h2>K9 Fitness</h2><p>Sin conexión. Conéctate para sincronizar.</p></body></html>',{headers:{'Content-Type':'text/html'}}))));});`;
-  const blob=new Blob([sw],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  var swCode=[
+    "const C='k9v2';",
+    "self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll([location.href]).catch(()=>{})));self.skipWaiting();});",
+    "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});",
+    "self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('supabase'))return;",
+    "e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){var cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;})",
+    ".catch(()=>caches.match(e.request).then(r=>r||new Response('Offline',{headers:{'Content-Type':'text/html'}}))));});"
+  ].join('\n');
+  try{
+    var blob=new Blob([swCode],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(function(){});
+  }catch(e){}
 }
 
 function setupOfflineDetection(){
