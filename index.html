@@ -348,7 +348,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="hero-sub" id="entrenar-sub">Cargando...</div>
   </div>
   <div class="scroll">
-    <button class="start-btn" onclick="showToast('✓ ¡Entrenamiento iniciado! 💪')">▶ Iniciar entrenamiento</button>
+    <button class="start-btn" onclick="startWorkoutSession()">▶ Iniciar entrenamiento</button>
+
+    <!-- WORKOUT SESSION BAR -->
+    <div id="session-bar" style="display:none;margin:0 20px 16px;background:var(--card);border-radius:16px;border:1px solid var(--green);padding:14px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;color:var(--green-light)">⏱️ Entrenamiento activo</div>
+        <button onclick="stopWorkoutSession()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif">Finalizar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+        <div style="background:var(--card2);border-radius:10px;padding:10px 6px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--text)" id="session-time">00:00</div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:2px">Tiempo</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px 6px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#e74c3c" id="session-hr">—</div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:2px">FC bpm</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px 6px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--green-light)" id="session-kcal">0</div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:2px">kcal</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:10px 6px;cursor:pointer" onclick="connectSmartwatch()">
+          <div style="font-size:20px" id="session-watch-icon">⌚</div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:2px" id="session-watch-label">Conectar</div>
+        </div>
+      </div>
+    </div>
     <div class="section"><div class="sec-title">Ejercicios de hoy</div><div id="ejercicios-hoy"><div class="lib-loading"><div class="lib-spinner"></div></div></div></div>
   </div>
   <div class="bottom-nav">
@@ -1400,6 +1426,97 @@ async function enviarMensaje(email, nombre){
   showToast('✓ Mensaje enviado a '+nombre);
 }
 
+// ─── WORKOUT SESSION + SMARTWATCH ────────────────────────────────────────────
+let sessionInterval=null;
+let sessionSeconds=0;
+let sessionKcal=0;
+let sessionHR=0;
+let bleDevice=null;
+let bleHRChar=null;
+let watchConnected=false;
+
+function startWorkoutSession(){
+  document.getElementById('session-bar').style.display='block';
+  document.querySelector('.start-btn').style.display='none';
+  sessionSeconds=0;sessionKcal=0;
+  if(sessionInterval)clearInterval(sessionInterval);
+  sessionInterval=setInterval(()=>{
+    sessionSeconds++;
+    const m=Math.floor(sessionSeconds/60),s=sessionSeconds%60;
+    document.getElementById('session-time').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    // Estimate calories (MET ~6 for strength training, avg 70kg)
+    sessionKcal=Math.round((6*70*3.5/200)*(sessionSeconds/60));
+    document.getElementById('session-kcal').textContent=sessionKcal;
+    // Simulate HR if no watch connected
+    if(!watchConnected){
+      const base=120+Math.sin(sessionSeconds/30)*15;
+      sessionHR=Math.round(base+Math.random()*10-5);
+      document.getElementById('session-hr').textContent=sessionHR;
+    }
+  },1000);
+  showToast('✓ ¡Entrenamiento iniciado! 💪');
+}
+
+function stopWorkoutSession(){
+  if(sessionInterval){clearInterval(sessionInterval);sessionInterval=null;}
+  document.getElementById('session-bar').style.display='none';
+  document.querySelector('.start-btn').style.display='flex';
+  if(bleDevice&&bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+  watchConnected=false;
+  if(sessionSeconds>60){
+    const mins=Math.floor(sessionSeconds/60);
+    showToast(`✓ ¡Sesión completada! ${mins} min · ${sessionKcal} kcal 🔥`);
+  } else {
+    showToast('Entrenamiento finalizado');
+  }
+}
+
+async function connectSmartwatch(){
+  if(!navigator.bluetooth){
+    showToast('⚠️ Bluetooth solo disponible en Android + Chrome','error');
+    return;
+  }
+  try{
+    showToast('🔍 Buscando smartwatch...');
+    bleDevice=await navigator.bluetooth.requestDevice({
+      filters:[{services:['heart_rate']}],
+      optionalServices:['heart_rate','battery_service']
+    });
+    const server=await bleDevice.gatt.connect();
+    const service=await server.getPrimaryService('heart_rate');
+    bleHRChar=await service.getCharacteristic('heart_rate_measurement');
+    await bleHRChar.startNotifications();
+    bleHRChar.addEventListener('characteristicvaluechanged',onHRChanged);
+    watchConnected=true;
+    document.getElementById('session-watch-icon').textContent='🟢';
+    document.getElementById('session-watch-label').textContent=bleDevice.name||'Conectado';
+    showToast('✓ Smartwatch conectado — FC en tiempo real');
+    bleDevice.addEventListener('gattserverdisconnected',()=>{
+      watchConnected=false;
+      document.getElementById('session-watch-icon').textContent='⌚';
+      document.getElementById('session-watch-label').textContent='Conectar';
+      showToast('Smartwatch desconectado','error');
+    });
+  }catch(e){
+    if(e.name==='NotFoundError')showToast('No se encontró smartwatch compatible');
+    else if(e.name==='SecurityError')showToast('⚠️ Activa Bluetooth en tu celular','error');
+    else showToast('No se pudo conectar: '+e.message,'error');
+  }
+}
+
+function onHRChanged(event){
+  const val=event.target.value;
+  const flags=val.getUint8(0);
+  const hr=(flags&0x1)?val.getUint16(1,true):val.getUint8(1);
+  sessionHR=hr;
+  document.getElementById('session-hr').textContent=hr;
+  // Update calories with real HR (Keytel formula)
+  if(sessionSeconds>0){
+    const kcalMin=(-55.0969+(0.6309*hr)+(0.1988*70)+(0.2017*30))/4.184;
+    sessionKcal=Math.round(kcalMin*(sessionSeconds/60));
+    document.getElementById('session-kcal').textContent=Math.max(0,sessionKcal);
+  }
+}
 // ─── NOTIFICACIONES ───────────────────────────────────────────────────────────
 const NOTIF_TYPES = {
   nueva_rutina:  {icon:'📋', title:'Nueva rutina disponible'},
