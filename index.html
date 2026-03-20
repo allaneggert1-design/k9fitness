@@ -332,11 +332,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
         <div><div class="msg-name" id="msg-trainer-name">Entrenador</div><div class="msg-text" id="msg-trainer-text">—</div></div>
       </div>
     </div>
+    <div class="section">
+      <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+        🔥 Comunidad K9
+        <button onclick="navTo('comunidad')" style="background:none;border:none;color:var(--green-light);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600">Ver todo →</button>
+      </div>
+      <div id="feed-preview"></div>
+    </div>
   </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -385,7 +392,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item active" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -430,7 +437,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item active" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item active" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -539,7 +546,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
     <div class="nav-item active" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -561,7 +568,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -665,7 +672,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item active" onclick="navTo('perfil')" style="position:relative"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div id="notif-dot-nav" style="display:none;position:absolute;top:4px;right:22px;width:8px;height:8px;background:var(--green);border-radius:50%;border:2px solid var(--surface)"></div></div>
   </div>
@@ -849,6 +856,70 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
       <div id="nutri-historial" style="margin-bottom:20px">
         <div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Sin registros hoy</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMUNIDAD FEED -->
+<div class="screen" id="s-comunidad">
+  <div class="topbar">
+    <div class="topbar-row">
+      <h1>🔥 <span>Comunidad</span></h1>
+      <button onclick="showNewPost()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+ Publicar</button>
+    </div>
+  </div>
+  <div class="scroll" id="feed-scroll">
+    <div id="feed-list" style="padding:12px 16px 0">
+      <div class="lib-loading"><div class="lib-spinner"></div><span>Cargando comunidad...</span></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
+    <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
+    <div class="nav-item active" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
+    <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
+    <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
+  </div>
+</div>
+
+<!-- NUEVO POST -->
+<div class="screen" id="s-nuevo-post">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-comunidad')">←</div>
+      <h1>Nueva <span>publicación</span></h1>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:16px 20px">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Tipo de publicación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px" id="post-tipo-grid">
+        <div class="post-tipo-btn active" data-tipo="sesion" onclick="selectPostTipo(this,'sesion')" style="background:var(--green-glow);border:1px solid var(--green);border-radius:12px;padding:14px;text-align:center;cursor:pointer">
+          <div style="font-size:24px;margin-bottom:4px">💪</div>
+          <div style="font-size:12px;font-weight:600;color:var(--green-light)">Sesión completada</div>
+        </div>
+        <div class="post-tipo-btn" data-tipo="pr" onclick="selectPostTipo(this,'pr')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer">
+          <div style="font-size:24px;margin-bottom:4px">🏆</div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted)">Nuevo récord</div>
+        </div>
+        <div class="post-tipo-btn" data-tipo="logro" onclick="selectPostTipo(this,'logro')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer">
+          <div style="font-size:24px;margin-bottom:4px">🎯</div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted)">Meta alcanzada</div>
+        </div>
+        <div class="post-tipo-btn" data-tipo="mensaje" onclick="selectPostTipo(this,'mensaje')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer">
+          <div style="font-size:24px;margin-bottom:4px">💬</div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted)">Mensaje</div>
+        </div>
+      </div>
+      <div id="post-pr-fields" style="display:none">
+        <div class="input-group"><label class="input-label">Ejercicio</label><input class="input-field" id="post-ejercicio" placeholder="ej: Press de banca"></div>
+        <div class="input-group"><label class="input-label">Peso (kg)</label><input class="input-field" type="number" id="post-peso" placeholder="ej: 100"></div>
+      </div>
+      <div id="post-sesion-fields">
+        <div class="input-group"><label class="input-label">Duración (min)</label><input class="input-field" type="number" id="post-duracion" placeholder="ej: 60"></div>
+      </div>
+      <div class="input-group"><label class="input-label">Cuéntale a la comunidad</label><textarea class="input-field" id="post-contenido" rows="4" placeholder="¿Cómo fue tu entrenamiento?" style="resize:none"></textarea></div>
+      <button class="btn-green" onclick="publishPost()">🚀 Publicar</button>
     </div>
   </div>
 </div>
@@ -1067,6 +1138,177 @@ function loadMedidas(p){
 let allProgresoData=[];
 let currentChartField='peso';
 let chartInstance=null;
+
+// ─── FEED SOCIAL ──────────────────────────────────────────────────────────────
+let currentPostTipo='sesion';
+
+const FEED_TIPO_CONFIG={
+  pr:{icon:'🏆',color:'#f39c12',label:'Nuevo récord'},
+  sesion:{icon:'💪',color:'var(--green)',label:'Sesión completada'},
+  logro:{icon:'🎯',color:'#9b59b6',label:'Meta alcanzada'},
+  foto:{icon:'📸',color:'#3498db',label:'Foto'},
+  mensaje:{icon:'💬',color:'var(--muted)',label:'Mensaje'},
+};
+
+function renderFeedPost(post, preview=false){
+  const cfg=FEED_TIPO_CONFIG[post.tipo]||FEED_TIPO_CONFIG.mensaje;
+  const initials=(post.alumno_nombre||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const time=formatChatTime(post.created_at);
+  return `<div style="background:var(--card);border-radius:18px;border:1px solid var(--border);padding:16px;margin-bottom:12px" id="post-${post.id}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">${initials}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600">${post.alumno_nombre||'Atleta K9'}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+          <span style="background:rgba(0,0,0,.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:${cfg.color}">${cfg.icon} ${cfg.label}</span>
+          <span style="font-size:11px;color:var(--muted)">${time}</span>
+        </div>
+      </div>
+    </div>
+    ${post.ejercicio&&post.peso_kg?`<div style="background:linear-gradient(135deg,rgba(243,156,18,.1),rgba(243,156,18,.05));border:1px solid rgba(243,156,18,.2);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:28px">🏆</span>
+      <div><div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase">${post.ejercicio}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#f39c12">${post.peso_kg} kg</div></div>
+    </div>`:post.duracion_min?`<div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:10px 16px;margin-bottom:10px;display:flex;gap:16px">
+      <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--green-light)">${post.duracion_min}</div><div style="font-size:10px;color:var(--muted)">minutos</div></div>
+    </div>`:''}
+    ${post.contenido?`<div style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:12px">${post.contenido}</div>`:''}
+    ${!preview?`<div style="display:flex;gap:16px;padding-top:10px;border-top:1px solid var(--border)">
+      <button onclick="toggleLike('${post.id}')" id="like-btn-${post.id}" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;padding:0">
+        <span id="like-icon-${post.id}">🤍</span> <span id="like-count-${post.id}">${post.likes||0}</span>
+      </button>
+      <button onclick="showComments('${post.id}')" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;padding:0">💬 Comentar</button>
+      ${post.alumno_email===currentUser?.email?`<button onclick="deletePost('${post.id}')" style="margin-left:auto;background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;font-family:'Barlow',sans-serif">✕ Eliminar</button>`:''}
+    </div>
+    <div id="comments-${post.id}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px"></div>`:''}
+  </div>`;
+}
+
+async function loadFeed(){
+  const list=document.getElementById('feed-list');
+  if(!list)return;
+  const {data}=await supa.from('feed_posts').select('*').order('created_at',{ascending:false}).limit(20);
+  if(!data||!data.length){
+    list.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">🔥</div>¡Sé el primero en publicar!<br>Comparte tu entrenamiento con la comunidad.</div>';
+    return;
+  }
+  list.innerHTML=data.map(p=>renderFeedPost(p)).join('');
+  // Check likes
+  if(currentUser){
+    const {data:myLikes}=await supa.from('feed_likes').select('post_id').eq('alumno_email',currentUser.email);
+    (myLikes||[]).forEach(l=>{
+      const icon=document.getElementById('like-icon-'+l.post_id);
+      if(icon)icon.textContent='❤️';
+    });
+  }
+}
+
+async function loadFeedPreview(){
+  const el=document.getElementById('feed-preview');
+  if(!el)return;
+  const {data}=await supa.from('feed_posts').select('*').order('created_at',{ascending:false}).limit(2);
+  if(!data||!data.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0">La comunidad está recién comenzando. ¡Sé el primero en publicar!</div>';
+    return;
+  }
+  el.innerHTML=data.map(p=>renderFeedPost(p,true)).join('');
+}
+
+async function toggleLike(postId){
+  if(!currentUser)return;
+  const icon=document.getElementById('like-icon-'+postId);
+  const countEl=document.getElementById('like-count-'+postId);
+  const isLiked=icon?.textContent==='❤️';
+  if(isLiked){
+    await supa.from('feed_likes').delete().eq('post_id',postId).eq('alumno_email',currentUser.email);
+    if(icon)icon.textContent='🤍';
+    if(countEl)countEl.textContent=Math.max(0,parseInt(countEl.textContent)-1);
+    await supa.from('feed_posts').update({likes:Math.max(0,(parseInt(countEl?.textContent)||0))}).eq('id',postId);
+  }else{
+    try{
+      await supa.from('feed_likes').insert({post_id:postId,alumno_email:currentUser.email});
+      if(icon)icon.textContent='❤️';
+      const newCount=(parseInt(countEl?.textContent)||0)+1;
+      if(countEl)countEl.textContent=newCount;
+      await supa.from('feed_posts').update({likes:newCount}).eq('id',postId);
+    }catch(e){}
+  }
+}
+
+async function showComments(postId){
+  const container=document.getElementById('comments-'+postId);
+  if(!container)return;
+  const isOpen=container.style.display!=='none';
+  if(isOpen){container.style.display='none';return;}
+  container.style.display='block';
+  const {data}=await supa.from('feed_comentarios').select('*').eq('post_id',postId).order('created_at',{ascending:true});
+  container.innerHTML=(data||[]).map(c=>`
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${(c.alumno_nombre||'?')[0].toUpperCase()}</div>
+      <div style="background:var(--card2);border-radius:12px;padding:8px 12px;flex:1">
+        <div style="font-size:11px;font-weight:600;color:var(--green-light);margin-bottom:2px">${c.alumno_nombre||'Atleta'}</div>
+        <div style="font-size:13px">${c.comentario}</div>
+      </div>
+    </div>`).join('')+`
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <input id="comment-input-${postId}" class="input-field" placeholder="Añade un comentario..." style="flex:1;padding:8px 12px;font-size:13px">
+    <button onclick="sendComment('${postId}')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">→</button>
+  </div>`;
+}
+
+async function sendComment(postId){
+  const input=document.getElementById('comment-input-'+postId);
+  const text=input?.value.trim();
+  if(!text||!currentUser)return;
+  const myName=currentProfile?.full_name||currentUser.email;
+  await supa.from('feed_comentarios').insert({post_id:postId,alumno_email:currentUser.email,alumno_nombre:myName,comentario:text});
+  input.value='';
+  await showComments(postId);
+}
+
+async function deletePost(postId){
+  if(!confirm('¿Eliminar esta publicación?'))return;
+  await supa.from('feed_posts').delete().eq('id',postId);
+  const el=document.getElementById('post-'+postId);
+  if(el)el.remove();
+  showToast('✓ Publicación eliminada');
+}
+
+function showNewPost(){goScreen('s-nuevo-post');}
+
+function selectPostTipo(el,tipo){
+  currentPostTipo=tipo;
+  document.querySelectorAll('.post-tipo-btn').forEach(b=>{
+    b.style.background='var(--card)';b.style.borderColor='var(--border)';
+    b.querySelector('div:last-child').style.color='var(--muted)';
+  });
+  el.style.background='var(--green-glow)';el.style.borderColor='var(--green)';
+  el.querySelector('div:last-child').style.color='var(--green-light)';
+  document.getElementById('post-pr-fields').style.display=tipo==='pr'?'block':'none';
+  document.getElementById('post-sesion-fields').style.display=tipo==='sesion'?'block':'none';
+}
+
+async function publishPost(){
+  if(!currentUser)return;
+  const contenido=document.getElementById('post-contenido').value.trim();
+  const ejercicio=document.getElementById('post-ejercicio')?.value.trim()||null;
+  const peso=parseFloat(document.getElementById('post-peso')?.value)||null;
+  const duracion=parseInt(document.getElementById('post-duracion')?.value)||null;
+  if(!contenido&&!ejercicio&&!duracion){showToast('⚠️ Escribe algo para publicar','error');return;}
+  const myName=currentProfile?.full_name||currentUser.email.split('@')[0];
+  const {error}=await supa.from('feed_posts').insert({
+    alumno_email:currentUser.email,alumno_nombre:myName,
+    tipo:currentPostTipo,contenido,ejercicio,peso_kg:peso,duracion_min:duracion,likes:0
+  });
+  if(error){showToast('⚠️ Error al publicar','error');return;}
+  showToast('✓ ¡Publicado en la comunidad! 🔥');
+  document.getElementById('post-contenido').value='';
+  if(document.getElementById('post-ejercicio'))document.getElementById('post-ejercicio').value='';
+  if(document.getElementById('post-peso'))document.getElementById('post-peso').value='';
+  if(document.getElementById('post-duracion'))document.getElementById('post-duracion').value='';
+  goScreen('s-comunidad');
+  loadFeed();
+}
 
 // ─── NUTRICIÓN ────────────────────────────────────────────────────────────────
 let nutriTodayData=[];
@@ -1454,7 +1696,7 @@ function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classLis
 function goBack(to){goScreen(to);}
 function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
-  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion'};
+  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',comunidad:'s-comunidad',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion'};
   goScreen(m[tab]);
   if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();loadMuscleMap();},100);
   if(tab==='perfil') loadPerfil();
@@ -1462,6 +1704,8 @@ function navTo(tab){
   if(tab==='notificaciones') loadNotificaciones();
   if(tab==='historial') loadHistorialFull();
   if(tab==='nutricion') loadNutricion();
+  if(tab==='comunidad') loadFeed();
+  if(tab==='inicio') loadFeedPreview();
 }
 
 function loadPerfil(){
@@ -1838,10 +2082,12 @@ function adjustWeight(idx, delta){
 async function savePR(ejercicio, pesoKg, reps){
   if(!currentUser||!ejercicio||!pesoKg)return;
   const prev=prCache[ejercicio]||0;
-  if(pesoKg<=prev)return; // Not a PR
+  if(pesoKg<=prev)return;
   await supa.from('records_personales').insert({alumno_email:currentUser.email,ejercicio,peso_kg:pesoKg,reps,fecha:new Date().toISOString().split('T')[0]});
   prCache[ejercicio]=pesoKg;
-  // Celebración!
+  // Auto-post PR to feed
+  const myName=currentProfile?.full_name||currentUser.email.split('@')[0];
+  supa.from('feed_posts').insert({alumno_email:currentUser.email,alumno_nombre:myName,tipo:'pr',ejercicio,peso_kg:pesoKg,contenido:'¡Nuevo récord personal! 🏆',likes:0}).catch(()=>{});
   showPRCelebration(ejercicio, pesoKg);
 }
 
@@ -2309,6 +2555,15 @@ async function stopWorkoutSession(){
       frecuencia_cardiaca_max:sessionHR||null,
       fecha:new Date().toISOString().split('T')[0]
     });
+    // Auto-post to feed
+    const myName=currentProfile?.full_name||currentUser.email.split('@')[0];
+    const pct=totalDots>0?Math.round((completedDots/totalDots)*100):100;
+    supa.from('feed_posts').insert({
+      alumno_email:currentUser.email,alumno_nombre:myName,
+      tipo:'sesion',duracion_min:mins,
+      contenido:`Completé ${rutinaNombre} — ${mins} min · ${sessionKcal} kcal 🔥${pct>=100?' ¡Sesión perfecta! ✅':''}`,
+      likes:0
+    }).catch(()=>{});
   }
 
   // Show summary screen
