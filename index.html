@@ -525,7 +525,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
       <div id="historial-preview"></div>
     </div>
     <div class="section">
-      <div class="sec-title">🏆 Récords personales</div>
+      <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+        🏆 Récords personales
+        <button onclick="exportPRsPDF()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600">📄 Exportar</button>
+      </div>
       <div id="prs-list"><div class="lib-loading" style="padding:20px"><div class="lib-spinner"></div></div></div>
     </div>
     <div class="section">
@@ -1139,7 +1142,117 @@ let allProgresoData=[];
 let currentChartField='peso';
 let chartInstance=null;
 
-// ─── FEED SOCIAL ──────────────────────────────────────────────────────────────
+// ─── EXPORTAR PDF ─────────────────────────────────────────────────────────────
+function buildPDFHTML(title, date, stats, exercises, extras=''){
+  const name=currentProfile?.full_name||'Atleta';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;color:#111;background:#fff;padding:32px}
+    .header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #5BA832;padding-bottom:16px;margin-bottom:24px}
+    .logo{font-size:28px;font-weight:900;color:#5BA832;letter-spacing:1px}
+    .logo span{color:#111}
+    .meta{text-align:right;font-size:12px;color:#666}
+    h1{font-size:22px;font-weight:900;text-transform:uppercase;margin-bottom:4px}
+    .date{font-size:13px;color:#888;margin-bottom:24px}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+    .stat{background:#f8f8f8;border-radius:10px;padding:14px;text-align:center;border:1px solid #eee}
+    .stat-n{font-size:28px;font-weight:900;color:#5BA832}
+    .stat-l{font-size:10px;color:#888;text-transform:uppercase;margin-top:3px}
+    .section-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#5BA832;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:12px}
+    .ex-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0}
+    .ex-num{width:28px;height:28px;border-radius:50%;background:#5BA832;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-right:12px}
+    .ex-name{font-size:14px;font-weight:600;flex:1}
+    .ex-badges{display:flex;gap:6px}
+    .badge{background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:11px}
+    .footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa}
+    .motivational{background:#f0fae8;border:1px solid #c8e6a0;border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:#3a6b1a;text-align:center}
+  </style></head><body>
+  <div class="header">
+    <div class="logo">K9<span>FITNESS</span><br><span style="font-size:12px;font-weight:400;color:#888;letter-spacing:2px">ACADEMIA</span></div>
+    <div class="meta"><div style="font-weight:700">${name}</div><div>${new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}</div></div>
+  </div>
+  <h1>${title}</h1>
+  <div class="date">${date}</div>
+  ${stats}
+  ${extras}
+  <div class="footer">K9 Fitness Academia · k9fitness.pp.ua · Generado automáticamente</div>
+  </body></html>`;
+}
+
+function exportSummaryPDF(rutinaNombre, mins, kcal, volumen, pct, hrMax){
+  const date=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const stats=`<div class="stats-grid">
+    <div class="stat"><div class="stat-n">${mins}</div><div class="stat-l">Minutos</div></div>
+    <div class="stat"><div class="stat-n">${kcal}</div><div class="stat-l">Calorías</div></div>
+    <div class="stat"><div class="stat-n">${volumen}kg</div><div class="stat-l">Volumen</div></div>
+    <div class="stat"><div class="stat-n">${pct}%</div><div class="stat-l">Completado</div></div>
+  </div>`;
+  const extras=`
+    ${hrMax?`<div class="motivational">❤️ Frecuencia cardíaca máxima: <strong>${hrMax} bpm</strong></div>`:''}
+    <div class="motivational">${getMotivationalMsg(pct,mins)}</div>
+    <div class="section-title" style="margin-top:20px">Ejercicios realizados</div>
+    ${Array.from(document.querySelectorAll('[id^="excard-"]')).map((card,i)=>{
+      const name=card.querySelector('.ex-name')?.textContent||'Ejercicio';
+      const doneCount=card.querySelectorAll('.serie-dot.done').length;
+      const totalCount=card.querySelectorAll('.serie-dot').length;
+      const peso=document.getElementById('weight-'+i)?.value||'';
+      return `<div class="ex-row">
+        <div class="ex-num">${i+1}</div>
+        <div class="ex-name">${name}</div>
+        <div class="ex-badges">
+          <span class="badge">${doneCount}/${totalCount} series</span>
+          ${peso?`<span class="badge">${peso} kg</span>`:''}
+        </div>
+      </div>`;
+    }).join('')}`;
+  printPDF(buildPDFHTML(rutinaNombre, date, stats, '', extras));
+}
+
+async function exportHistorialPDF(h){
+  const fecha=new Date(h.fecha).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const pct=h.ejercicios_completados?Math.min(100,h.ejercicios_completados*10):100;
+  const stats=`<div class="stats-grid">
+    <div class="stat"><div class="stat-n">${h.duracion_min||'—'}</div><div class="stat-l">Minutos</div></div>
+    <div class="stat"><div class="stat-n">${h.kcal_quemadas||'—'}</div><div class="stat-l">Calorías</div></div>
+    <div class="stat"><div class="stat-n">${h.volumen_total_kg||'—'}kg</div><div class="stat-l">Volumen</div></div>
+    <div class="stat"><div class="stat-n">${pct}%</div><div class="stat-l">Completado</div></div>
+  </div>`;
+  const extras=h.frecuencia_cardiaca_max?`<div class="motivational">❤️ Frecuencia cardíaca máxima: <strong>${h.frecuencia_cardiaca_max} bpm</strong></div>`:'';
+  printPDF(buildPDFHTML(h.nombre_rutina||'Entrenamiento', fecha, stats, '', extras));
+}
+
+async function exportPRsPDF(){
+  const {data}=await supa.from('records_personales').select('*').eq('alumno_email',currentUser.email).order('peso_kg',{ascending:false});
+  if(!data||!data.length){showToast('No hay récords para exportar');return;}
+  const best={};
+  data.forEach(r=>{if(!best[r.ejercicio]||r.peso_kg>best[r.ejercicio].peso_kg)best[r.ejercicio]=r;});
+  const stats=`<div style="margin-bottom:20px"><span style="font-size:13px;color:#888">${Object.keys(best).length} récords personales registrados</span></div>`;
+  const extras=`<div class="section-title">Récords Personales</div>
+    ${Object.values(best).sort((a,b)=>b.peso_kg-a.peso_kg).map((r,i)=>`
+    <div class="ex-row">
+      <div class="ex-num" style="background:#f39c12">${i+1}</div>
+      <div class="ex-name">${r.ejercicio}</div>
+      <div class="ex-badges">
+        <span class="badge" style="background:#fff3cd;color:#856404">🏆 ${r.peso_kg} kg</span>
+        ${r.reps?`<span class="badge">${r.reps} reps</span>`:''}
+        <span class="badge">${new Date(r.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</span>
+      </div>
+    </div>`).join('')}`;
+  printPDF(buildPDFHTML('Récords Personales', new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}), stats, '', extras));
+}
+
+function printPDF(html){
+  const win=window.open('','_blank');
+  if(!win){showToast('⚠️ Activa las ventanas emergentes para exportar PDF','error');return;}
+  win.document.write(html);
+  win.document.close();
+  win.onload=()=>{
+    setTimeout(()=>{
+      win.print();
+    },500);
+  };
+}
 let currentPostTipo='sesion';
 
 const FEED_TIPO_CONFIG={
@@ -2437,7 +2550,10 @@ function renderHistorialCard(h){
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;line-height:1.1">${h.nombre_rutina||'Entrenamiento'}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${fecha}</div>
       </div>
-      <div style="background:${pct>=80?'var(--green-glow)':'var(--card2)'};border:1px solid ${pct>=80?'rgba(91,168,50,.3)':'var(--border)'};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:${pct>=80?'var(--green-light)':'var(--muted)'}">${pct}%</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="background:${pct>=80?'var(--green-glow)':'var(--card2)'};border:1px solid ${pct>=80?'rgba(91,168,50,.3)':'var(--border)'};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:${pct>=80?'var(--green-light)':'var(--muted)'}">${pct}%</div>
+        <button onclick="exportHistorialPDF(${JSON.stringify(h).replace(/"/g,'&quot;')})" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif">📄</button>
+      </div>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap">
       ${h.duracion_min?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)"><span>⏱️</span>${h.duracion_min} min</div>`:''}
@@ -2604,7 +2720,8 @@ function showWorkoutSummary(mins, doneDots, totalDots, volumen, kcal, hrMax, rut
       <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:16px;text-align:center;margin-bottom:20px">
         <div style="font-size:13px;color:var(--green-light);line-height:1.6">${getMotivationalMsg(pct, mins)}</div>
       </div>
-      <button onclick="document.getElementById('workout-summary-overlay').remove()" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">¡Listo! 🏠</button>
+      <button onclick="document.getElementById('workout-summary-overlay').remove()" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-bottom:10px">¡Listo! 🏠</button>
+      <button onclick="exportSummaryPDF('${rutinaNombre}',${mins},${kcal},${Math.round(volumen)},${pct},${hrMax||0})" style="width:100%;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:14px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">📄 Exportar PDF</button>
     </div>`;
   document.body.appendChild(overlay);
   if(navigator.vibrate)navigator.vibrate([100,50,200]);
