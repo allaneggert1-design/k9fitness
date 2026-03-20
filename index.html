@@ -466,7 +466,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="scroll">
     <div class="stat-row">
       <div class="stat"><div class="stat-n" id="prog-registros" style="font-size:22px">0</div><div class="stat-l">Registros</div></div>
-      <div class="stat"><div class="stat-n" id="prog-peso" style="font-size:22px">—</div><div class="stat-l">Peso actual</div></div>
+      <div class="stat" style="cursor:pointer" onclick="navTo('fases')"><div class="stat-n" style="font-size:22px">📋</div><div class="stat-l">Programa</div></div>
       <div class="stat" style="cursor:pointer" onclick="navTo('nutricion')"><div class="stat-n" style="font-size:22px">🥗</div><div class="stat-l">Nutrición</div></div>
     </div>
     <div class="section">
@@ -648,6 +648,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 
       <div class="sec-title">Cuenta</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <button onclick="openCalendario(currentUser?.email,currentProfile?.full_name)" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+          <span style="font-size:20px">📅</span>
+          <span style="font-size:14px;font-weight:500;color:var(--text)">Mi calendario de entrenamientos</span>
+          <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+        </button>
+        <button onclick="showAnamnese()" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+          <span style="font-size:20px">📋</span>
+          <span style="font-size:14px;font-weight:500;color:var(--text)">Evaluación física inicial</span>
+          <span id="anamnese-badge" style="display:none;background:var(--green);color:#fff;border-radius:20px;font-size:11px;font-weight:700;padding:2px 8px;margin-left:4px">✓</span>
+          <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+        </button>
         <button onclick="navTo('notificaciones')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
           <span style="font-size:20px">🔔</span>
           <span style="font-size:14px;font-weight:500;color:var(--text)">Notificaciones</span>
@@ -927,6 +938,79 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   </div>
 </div>
 
+<!-- PROGRAMA POR FASES -->
+<div class="screen" id="s-fases">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-progreso')">←</div>
+      <h1>📋 <span>Mi Programa</span></h1>
+      <div id="fases-prog-label" style="font-size:12px;color:var(--muted)"></div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div id="fases-container" style="padding:14px 20px 0">
+      <div class="lib-loading"><div class="lib-spinner"></div><span>Cargando programa...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDARIO -->
+<div class="screen" id="s-calendario">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" id="cal-back-btn" onclick="goScreen('s-entrenador')">←</div>
+      <h1>📅 <span>Calendario</span></h1>
+      <div id="cal-alumno-label" style="font-size:11px;color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px 20px 0">
+      <!-- Month nav -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <button onclick="calChangeMonth(-1)" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text);cursor:pointer;font-size:16px">‹</button>
+        <div id="cal-month-label" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:1px"></div>
+        <button onclick="calChangeMonth(1)" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text);cursor:pointer;font-size:16px">›</button>
+      </div>
+      <!-- Day headers -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px">
+        ${['L','M','X','J','V','S','D'].map(d=>`<div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">${d}</div>`).join('')}
+      </div>
+      <!-- Calendar grid -->
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:20px"></div>
+      <!-- Day detail -->
+      <div id="cal-day-detail" style="display:none">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:12px" id="cal-day-title"></div>
+        <div id="cal-day-rutinas"></div>
+        <button onclick="showAddRutinaToDay()" id="cal-add-btn" style="display:none;width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;cursor:pointer;margin-top:10px">+ Asignar entrenamiento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ANAMNESE -->
+<div class="screen" id="s-anamnese">
+  <div style="flex:1;overflow-y:auto;padding:52px 24px 32px;scrollbar-width:none">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:52px;margin-bottom:12px">📋</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;text-transform:uppercase;margin-bottom:6px">Evaluación Inicial</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">Necesitamos conocerte mejor para personalizar tu programa de entrenamiento.</div>
+    </div>
+    <!-- Step indicator -->
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:28px" id="anamnese-steps">
+      <div style="width:32px;height:4px;border-radius:2px;background:var(--green)" id="step-dot-0"></div>
+      <div style="width:32px;height:4px;border-radius:2px;background:var(--border)" id="step-dot-1"></div>
+      <div style="width:32px;height:4px;border-radius:2px;background:var(--border)" id="step-dot-2"></div>
+      <div style="width:32px;height:4px;border-radius:2px;background:var(--border)" id="step-dot-3"></div>
+    </div>
+    <div id="anamnese-content"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button id="anamnese-back-btn" onclick="anamneseBack()" style="display:none;flex:1;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;cursor:pointer">← Anterior</button>
+      <button id="anamnese-next-btn" onclick="anamneseNext()" style="flex:2;background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-transform:uppercase;cursor:pointer">Siguiente →</button>
+    </div>
+    <button onclick="goScreen('s-inicio')" style="width:100%;background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;margin-top:12px;font-family:'Barlow',sans-serif">Completar después</button>
+  </div>
+</div>
+
 <!-- HISTORIAL -->
 <div class="screen" id="s-historial">
   <div class="topbar">
@@ -1011,6 +1095,7 @@ function afterLogin(){
     loadDashboard();loadLibrary();
     checkUnreadNotifs();
     setInterval(checkUnreadNotifs, 30000);
+    checkAnamnese();
   }
 }
 
@@ -1142,7 +1227,386 @@ let allProgresoData=[];
 let currentChartField='peso';
 let chartInstance=null;
 
-// ─── EXPORTAR PDF ─────────────────────────────────────────────────────────────
+// ─── PROGRAMA POR FASES ───────────────────────────────────────────────────────
+const FASES_DEFAULT=[
+  {numero:1,nombre:'Fase 1 — Adaptación',objetivo:'Acostumbrar el cuerpo al entrenamiento',descripcion:'Cargas bajas, técnica perfecta, 3 días/semana. El objetivo es crear el hábito y aprender los movimientos correctamente.',color:'#3498db',icono:'🌱',semanas:4},
+  {numero:2,nombre:'Fase 2 — Hipertrofia',objetivo:'Maximizar el crecimiento muscular',descripcion:'Cargas moderadas-altas, volumen alto, 4 días/semana. Enfoque en la conexión mente-músculo y el tiempo bajo tensión.',color:'#f39c12',icono:'💪',semanas:6},
+  {numero:3,nombre:'Fase 3 — Fuerza',objetivo:'Aumentar la fuerza máxima',descripcion:'Cargas muy altas, pocas repeticiones, 4-5 días/semana. Progresión lineal en los ejercicios compuestos principales.',color:'#e74c3c',icono:'🏋️',semanas:6},
+  {numero:4,nombre:'Fase 4 — Peak/Definición',objetivo:'Mostrar los resultados del trabajo',descripcion:'Cargas altas con superávit reducido, cardio añadido, 5 días/semana. Consolidar fuerza y masa muscular ganadas.',color:'#9b59b6',icono:'🔥',semanas:4},
+];
+
+async function loadFases(){
+  if(!currentUser)return;
+  const container=document.getElementById('fases-container');
+  const label=document.getElementById('fases-prog-label');
+  if(!container)return;
+
+  const {data:programas}=await supa.from('fases_programa').select('*').eq('alumno_email',currentUser.email).eq('activo',true).limit(1);
+  const programa=programas?.[0];
+
+  if(!programa){
+    // No program yet — show create option
+    container.innerHTML=`
+      <div style="text-align:center;padding:32px 0">
+        <div style="font-size:64px;margin-bottom:16px">📋</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:8px">Sin programa activo</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">Tu entrenador puede asignarte un programa<br>por fases. También puedes iniciar el<br>programa estándar K9 ahora mismo.</div>
+        <button onclick="createDefaultProgram()" style="background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px 32px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">🚀 Iniciar Programa K9</button>
+      </div>`;
+    return;
+  }
+
+  const faseActual=programa.fase_actual||1;
+  const semanaActual=programa.semana_actual||1;
+  const totalFases=programa.total_fases||4;
+  const semanasPorFase=programa.semanas_por_fase||4;
+  const progTotal=((faseActual-1)*semanasPorFase+semanaActual)/(totalFases*semanasPorFase)*100;
+
+  if(label) label.textContent=`Fase ${faseActual}/${totalFases} · Sem. ${semanaActual}`;
+
+  container.innerHTML=`
+    <!-- Progreso general -->
+    <div style="background:var(--card);border-radius:16px;padding:18px;border:1px solid var(--border);margin-bottom:20px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;margin-bottom:4px">${programa.nombre_programa||'Programa K9 Fitness'}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Progreso general del programa</div>
+      <div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:8px">
+        <div style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-light));border-radius:4px;width:${Math.round(progTotal)}%;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+        <span>Semana ${(faseActual-1)*semanasPorFase+semanaActual} de ${totalFases*semanasPorFase}</span>
+        <span style="color:var(--green-light);font-weight:600">${Math.round(progTotal)}% completado</span>
+      </div>
+    </div>
+
+    <!-- Fases -->
+    <div class="sec-title">Fases del programa</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      ${FASES_DEFAULT.map(f=>{
+        const isActual=f.numero===faseActual;
+        const isCompletada=f.numero<faseActual;
+        const isProxima=f.numero>faseActual;
+        return `<div style="background:${isActual?`rgba(${f.color.replace('#','').match(/../g).map(h=>parseInt(h,16)).join(',')}),.08`:'var(--card)'};border-radius:16px;padding:18px;border:${isActual?`2px solid ${f.color}`:'1px solid var(--border)'};position:relative;overflow:hidden;${isProxima?'opacity:.5':''}">
+          ${isActual?`<div style="position:absolute;top:0;right:0;background:${f.color};color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 16px 0 10px;text-transform:uppercase;letter-spacing:.5px">ACTIVA</div>`:''}
+          ${isCompletada?`<div style="position:absolute;top:0;right:0;background:#2ecc71;color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 16px 0 10px;text-transform:uppercase;letter-spacing:.5px">✓ COMPLETADA</div>`:''}
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+            <div style="font-size:32px">${f.icono}</div>
+            <div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;color:${isActual?f.color:'var(--text)'}">${f.nombre}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${f.semanas} semanas · ${f.objetivo}</div>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:${isActual?'14px':'0'}">${f.descripcion}</div>
+          ${isActual?`
+            <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:10px">
+              <div style="height:100%;background:${f.color};border-radius:4px;width:${Math.round((semanaActual/semanasPorFase)*100)}%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;color:var(--muted)">Semana ${semanaActual} de ${semanasPorFase}</span>
+              ${semanaActual<semanasPorFase
+                ?`<button onclick="avanzarSemana('${programa.id}',${semanaActual},${semanasPorFase},${faseActual},${totalFases})" style="background:${f.color};color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif">Semana completada →</button>`
+                :faseActual<totalFases
+                  ?`<button onclick="avanzarFase('${programa.id}',${faseActual},${totalFases})" style="background:${f.color};color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif">Completar fase ${faseActual} 🎉</button>`
+                  :`<div style="font-size:12px;color:#2ecc71;font-weight:700">🏆 ¡Programa completado!</div>`
+              }
+            </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:14px;text-align:center;margin-bottom:20px;font-size:12px;color:var(--green-light);line-height:1.6">
+      💡 Completa cada semana de entrenamiento para avanzar en el programa. Tu entrenador puede ajustar el ritmo en cualquier momento.
+    </div>`;
+}
+
+async function createDefaultProgram(){
+  if(!currentUser)return;
+  const {error}=await supa.from('fases_programa').insert({
+    alumno_email:currentUser.email,
+    nombre_programa:'Programa K9 Fitness — Transformación Completa',
+    fase_actual:1,total_fases:4,semanas_por_fase:4,semana_actual:1,activo:true
+  });
+  if(error){showToast('⚠️ Error al crear programa','error');return;}
+  showToast('✓ ¡Programa iniciado! Bienvenido/a a la Fase 1 🌱');
+  loadFases();
+}
+
+async function avanzarSemana(progId, semanaActual, semanasPorFase, faseActual, totalFases){
+  if(!confirm(`¿Confirmas que completaste la semana ${semanaActual}?`))return;
+  await supa.from('fases_programa').update({semana_actual:semanaActual+1}).eq('id',progId);
+  showToast(`✓ ¡Semana ${semanaActual} completada! Semana ${semanaActual+1} 💪`);
+  loadFases();
+}
+
+async function avanzarFase(progId, faseActual, totalFases){
+  if(!confirm(`¿Confirmas que completaste la Fase ${faseActual}?`))return;
+  const nextFase=faseActual+1;
+  await supa.from('fases_programa').update({fase_actual:nextFase,semana_actual:1}).eq('id',progId);
+  // Post to feed
+  const myName=currentProfile?.full_name||currentUser.email.split('@')[0];
+  supa.from('feed_posts').insert({
+    alumno_email:currentUser.email,alumno_nombre:myName,
+    tipo:'logro',contenido:`¡Completé la Fase ${faseActual} del programa! Ahora arranco la Fase ${nextFase} 💪🔥`,likes:0
+  }).catch(()=>{});
+  showToast(`🎉 ¡Fase ${faseActual} completada! Iniciando Fase ${nextFase}...`);
+  // Show celebration
+  const f=FASES_DEFAULT[nextFase-1];
+  if(f){
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+    overlay.innerHTML=`
+      <div style="font-size:72px">${f.icono}</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;text-transform:uppercase;color:${f.color};text-align:center">¡Fase ${faseActual} Completada!</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:#fff;text-align:center">Iniciando ${f.nombre}</div>
+      <div style="font-size:13px;color:var(--muted);text-align:center;padding:0 32px;line-height:1.6">${f.objetivo}</div>
+      <button onclick="this.parentElement.remove();loadFases()" style="background:${f.color};color:#fff;border:none;border-radius:14px;padding:14px 40px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-top:8px">¡Vamos! 💪</button>`;
+    document.body.appendChild(overlay);
+    if(navigator.vibrate)navigator.vibrate([200,100,200,100,300]);
+  }
+}
+
+// Also add entrenador ability to assign program
+async function assignProgramToAlumno(alumnoEmail, alumnoNombre){
+  const confirmed=confirm(`¿Asignar el Programa K9 Completo a ${alumnoNombre}?`);
+  if(!confirmed)return;
+  const {data:existing}=await supa.from('fases_programa').select('id').eq('alumno_email',alumnoEmail).eq('activo',true);
+  if(existing?.length){
+    await supa.from('fases_programa').update({activo:false}).eq('alumno_email',alumnoEmail);
+  }
+  await supa.from('fases_programa').insert({
+    alumno_email:alumnoEmail,
+    nombre_programa:'Programa K9 Fitness — Transformación Completa',
+    fase_actual:1,total_fases:4,semanas_por_fase:4,semana_actual:1,activo:true
+  });
+  showToast(`✓ Programa asignado a ${alumnoNombre}`);
+}
+  showToast(`✓ Programa asignado a ${alumnoNombre}`);
+}
+
+// ─── 12. CALENDARIO DE ENTRENAMIENTOS ────────────────────────────────────────
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
+let calSelectedDay=null;
+let calAlumnoEmail=null;
+let calAlumnoNombre=null;
+let calRutinas=[];
+const DIAS_ES=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+async function openCalendario(email,nombre){
+  calAlumnoEmail=email||currentUser?.email;
+  calAlumnoNombre=nombre||currentProfile?.full_name||'';
+  calYear=new Date().getFullYear();calMonth=new Date().getMonth();
+  const label=document.getElementById('cal-alumno-label');
+  if(label)label.textContent=calAlumnoNombre;
+  const backBtn=document.getElementById('cal-back-btn');
+  if(backBtn)backBtn.setAttribute('onclick',currentProfile?.role==='entrenador'?"goScreen('s-entrenador')":"navTo('progreso')");
+  const {data}=await supa.from('rutinas').select('dia,nombre_rutina,ejercicio_nombre').eq('alumno_email',calAlumnoEmail);
+  calRutinas=data||[];
+  renderCalendario();
+  goScreen('s-calendario');
+}
+
+function calChangeMonth(delta){
+  calMonth+=delta;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendario();
+}
+
+function renderCalendario(){
+  const label=document.getElementById('cal-month-label');
+  if(label)label.textContent=MESES_ES[calMonth]+' '+calYear;
+  const grid=document.getElementById('cal-grid');
+  if(!grid)return;
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const offset=firstDay===0?6:firstDay-1;
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+  const dayMap={Lunes:1,Martes:2,Miércoles:3,Jueves:4,Viernes:5,Sábado:6,Domingo:0};
+  const rutinasDays=new Set(calRutinas.map(r=>dayMap[r.dia]).filter(d=>d!==undefined));
+  let cells='';
+  for(let i=0;i<offset;i++) cells+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(calYear,calMonth,d);
+    const isToday=date.toDateString()===today.toDateString();
+    const isSelected=calSelectedDay===d;
+    const hasRutina=rutinasDays.has(date.getDay());
+    const isPast=date<today&&!isToday;
+    cells+=`<div onclick="calSelectDay(${d})" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;background:${isToday?'var(--green)':isSelected?'var(--card2)':'transparent'};border:1px solid ${isToday?'transparent':isSelected?'var(--green)':'transparent'}">
+      <div style="font-size:13px;font-weight:${isToday||isSelected?'700':'400'};color:${isToday?'#fff':isPast?'var(--muted2)':'var(--text)'}">${d}</div>
+      ${hasRutina?`<div style="width:5px;height:5px;border-radius:50%;background:${isToday?'rgba(255,255,255,.8)':'var(--green)'};margin-top:1px"></div>`:''}
+    </div>`;
+  }
+  grid.innerHTML=cells;
+  const detail=document.getElementById('cal-day-detail');
+  if(detail&&!calSelectedDay)detail.style.display='none';
+}
+
+async function calSelectDay(day){
+  calSelectedDay=day;
+  renderCalendario();
+  const date=new Date(calYear,calMonth,day);
+  const dayName=DIAS_ES[date.getDay()];
+  const detail=document.getElementById('cal-day-detail');
+  const title=document.getElementById('cal-day-title');
+  const list=document.getElementById('cal-day-rutinas');
+  const addBtn=document.getElementById('cal-add-btn');
+  if(!detail)return;
+  detail.style.display='block';
+  if(title)title.textContent=`${dayName} ${day} de ${MESES_ES[calMonth]}`;
+  const dayRutinas=calRutinas.filter(r=>r.dia===dayName);
+  const nombres=[...new Set(dayRutinas.map(r=>r.nombre_rutina))];
+  if(list){
+    if(!dayRutinas.length){
+      list.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:10px 0">Sin entrenamiento para ${dayName}.</div>`;
+    }else{
+      list.innerHTML=nombres.map(n=>{
+        const exs=dayRutinas.filter(r=>r.nombre_rutina===n);
+        return `<div style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--green);margin-bottom:8px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;color:var(--green-light);margin-bottom:8px">${n}</div>
+          ${exs.slice(0,4).map(e=>`<div style="font-size:13px;color:var(--muted);padding:2px 0">• ${e.ejercicio_nombre}</div>`).join('')}
+          ${exs.length>4?`<div style="font-size:11px;color:var(--muted2);margin-top:4px">+${exs.length-4} más</div>`:''}
+        </div>`;
+      }).join('');
+    }
+  }
+  if(addBtn)addBtn.style.display=currentProfile?.role==='entrenador'?'block':'none';
+}
+
+function showAddRutinaToDay(){showToast('Usa "Crear rutina" y selecciona el día en el formulario del alumno');}
+
+// ─── 13. ANAMNESE / EVALUACIÓN FÍSICA ────────────────────────────────────────
+let anamneseStep=0;
+const anamneseData={};
+const ANAMNESE_STEPS=[
+  {title:'Información personal',fields:[
+    {id:'edad',label:'¿Cuántos años tienes?',type:'number',placeholder:'ej: 28'},
+    {id:'altura',label:'Altura (cm)',type:'number',placeholder:'ej: 175'},
+    {id:'peso_inicial',label:'Peso actual (kg)',type:'number',placeholder:'ej: 80'},
+    {id:'sexo',label:'Sexo biológico',type:'select',options:['Masculino','Femenino','Prefiero no decir']},
+  ]},
+  {title:'Experiencia y objetivos',fields:[
+    {id:'experiencia',label:'¿Cuánto tiempo llevas entrenando?',type:'select',options:['Nunca he entrenado','Menos de 6 meses','6 meses a 1 año','1 a 3 años','Más de 3 años']},
+    {id:'objetivo',label:'¿Cuál es tu objetivo principal?',type:'select',options:['Perder grasa corporal','Ganar masa muscular','Mejorar fuerza','Mejorar rendimiento','Salud general','Definición']},
+    {id:'dias_semana',label:'¿Cuántos días por semana puedes entrenar?',type:'select',options:['2 días','3 días','4 días','5 días','6 días']},
+    {id:'duracion',label:'¿Cuánto tiempo tienes por sesión?',type:'select',options:['30 min','45 min','60 min','90 min','Más de 90 min']},
+  ]},
+  {title:'Salud y lesiones',fields:[
+    {id:'lesiones',label:'¿Tienes alguna lesión o dolor crónico?',type:'textarea',placeholder:'ej: Dolor lumbar... (o "ninguna")'},
+    {id:'condiciones',label:'¿Alguna condición médica relevante?',type:'textarea',placeholder:'ej: Hipertensión... (o "ninguna")'},
+    {id:'medicacion',label:'¿Tomas alguna medicación?',type:'select',options:['No','Sí — antiinflamatorios','Sí — antihipertensivos','Sí — otros']},
+  ]},
+  {title:'Equipamiento y preferencias',fields:[
+    {id:'lugar',label:'¿Dónde entrenas principalmente?',type:'select',options:['Gimnasio completo','Gimnasio básico','Casa con pesas','Casa sin equipo','Al aire libre']},
+    {id:'ejercicios_gustados',label:'¿Qué ejercicios disfrutas?',type:'textarea',placeholder:'ej: Sentadillas, press de banca...'},
+    {id:'ejercicios_evitar',label:'¿Algún ejercicio que debas evitar?',type:'textarea',placeholder:'ej: No puedo hacer dominadas...'},
+    {id:'como_conocio',label:'¿Cómo llegaste a K9 Fitness?',type:'select',options:['Recomendación','Redes sociales','Búsqueda en internet','Mi entrenador','Otro']},
+  ]}
+];
+
+function showAnamnese(){anamneseStep=0;renderAnamneseStep();goScreen('s-anamnese');}
+
+function renderAnamneseStep(){
+  const step=ANAMNESE_STEPS[anamneseStep];
+  const content=document.getElementById('anamnese-content');
+  ANAMNESE_STEPS.forEach((_,i)=>{const d=document.getElementById('step-dot-'+i);if(d)d.style.background=i<=anamneseStep?'var(--green)':'var(--border)';});
+  const backBtn=document.getElementById('anamnese-back-btn');
+  const nextBtn=document.getElementById('anamnese-next-btn');
+  if(backBtn)backBtn.style.display=anamneseStep>0?'block':'none';
+  if(nextBtn)nextBtn.textContent=anamneseStep===ANAMNESE_STEPS.length-1?'Finalizar ✓':'Siguiente →';
+  if(!content)return;
+  content.innerHTML=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:20px;color:var(--green-light)">${anamneseStep+1}. ${step.title}</div>
+    ${step.fields.map(f=>`<div class="input-group">
+      <label class="input-label">${f.label}</label>
+      ${f.type==='select'
+        ?`<select class="input-field" id="ana-${f.id}" style="cursor:pointer">${f.options.map(o=>`<option value="${o}" ${anamneseData[f.id]===o?'selected':''}>${o}</option>`).join('')}</select>`
+        :f.type==='textarea'
+        ?`<textarea class="input-field" id="ana-${f.id}" rows="3" placeholder="${f.placeholder||''}" style="resize:none">${anamneseData[f.id]||''}</textarea>`
+        :`<input class="input-field" type="${f.type}" id="ana-${f.id}" placeholder="${f.placeholder||''}" value="${anamneseData[f.id]||''}">`
+      }
+    </div>`).join('')}`;
+}
+
+function anamneseNext(){
+  ANAMNESE_STEPS[anamneseStep].fields.forEach(f=>{const el=document.getElementById('ana-'+f.id);if(el)anamneseData[f.id]=el.value;});
+  if(anamneseStep<ANAMNESE_STEPS.length-1){anamneseStep++;renderAnamneseStep();}else saveAnamnese();
+}
+
+function anamneseBack(){if(anamneseStep>0){anamneseStep--;renderAnamneseStep();}}
+
+async function saveAnamnese(){
+  if(!currentUser)return;
+  await supa.from('profiles').update({anamnese:JSON.stringify(anamneseData),anamnese_completada:true}).eq('id',currentUser.id);
+  if(currentProfile)currentProfile.anamnese_completada=true;
+  showToast('✓ ¡Evaluación completada! Tu entrenador la revisará pronto 💪');
+  goScreen('s-inicio');
+}
+
+function checkAnamnese(){
+  if(!currentUser||!currentProfile||currentProfile.role==='entrenador')return;
+  if(!currentProfile.anamnese_completada){
+    setTimeout(()=>{
+      if(confirm('¡Bienvenido/a a K9 Fitness! Completa tu evaluación inicial (2 min) para personalizar tu programa. ¿Hacerlo ahora?')){
+        showAnamnese();
+      }
+    },3000);
+  }
+}
+
+// ─── 14. MODO OFFLINE ────────────────────────────────────────────────────────
+function registerServiceWorker(){
+  if(!('serviceWorker' in navigator))return;
+  const sw=`const C='k9v2';const A=['${location.href}'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A).catch(()=>{})));self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('supabase'))return;
+e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;}).catch(()=>caches.match(e.request).then(r=>r||new Response('<html><body style="font-family:sans-serif;text-align:center;padding:40px;background:#0C0C0C;color:#F0F0F0"><h2>K9 Fitness</h2><p>Sin conexión. Conéctate para sincronizar.</p></body></html>',{headers:{'Content-Type':'text/html'}}))));});`;
+  const blob=new Blob([sw],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+function setupOfflineDetection(){
+  const show=()=>{
+    if(document.getElementById('offline-bar'))return;
+    const b=document.createElement('div');
+    b.id='offline-bar';
+    b.style.cssText='position:fixed;bottom:80px;left:0;right:0;background:#c0392b;color:#fff;text-align:center;padding:8px;font-size:12px;font-weight:600;z-index:500;font-family:Barlow,sans-serif';
+    b.textContent='📵 Sin conexión — Los datos se guardarán cuando vuelvas en línea';
+    document.body.appendChild(b);
+  };
+  const hide=()=>{
+    const b=document.getElementById('offline-bar');
+    if(b){b.remove();showToast('✓ Conexión restaurada');}
+    syncOfflineQueue();
+  };
+  window.addEventListener('offline',show);
+  window.addEventListener('online',hide);
+  if(!navigator.onLine)show();
+}
+
+const offlineQueue=JSON.parse(localStorage.getItem('k9_queue')||'[]');
+
+async function syncOfflineQueue(){
+  if(!navigator.onLine||!offlineQueue.length)return;
+  const items=[...offlineQueue];
+  offlineQueue.length=0;
+  localStorage.removeItem('k9_queue');
+  let synced=0;
+  for(const item of items){
+    try{await supa.from(item.t).insert(item.d);synced++;}catch(e){}
+  }
+  if(synced)showToast(`✓ ${synced} registros sincronizados`);
+}
+
+function queueOfflineAction(table,data){
+  offlineQueue.push({t:table,d:data,ts:Date.now()});
+  localStorage.setItem('k9_queue',JSON.stringify(offlineQueue));
+}
+
+registerServiceWorker();
+setupOfflineDetection();
+window.addEventListener('online',syncOfflineQueue);
+
 function buildPDFHTML(title, date, stats, exercises, extras=''){
   const name=currentProfile?.full_name||'Atleta';
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
@@ -1809,7 +2273,7 @@ function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classLis
 function goBack(to){goScreen(to);}
 function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
-  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',comunidad:'s-comunidad',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion'};
+  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',comunidad:'s-comunidad',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion',fases:'s-fases',calendario:'s-calendario'};
   goScreen(m[tab]);
   if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();loadMuscleMap();},100);
   if(tab==='perfil') loadPerfil();
@@ -1819,6 +2283,8 @@ function navTo(tab){
   if(tab==='nutricion') loadNutricion();
   if(tab==='comunidad') loadFeed();
   if(tab==='inicio') loadFeedPreview();
+  if(tab==='fases') loadFases();
+  if(tab==='calendario') openCalendario(currentUser?.email, currentProfile?.full_name);
 }
 
 function loadPerfil(){
