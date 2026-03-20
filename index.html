@@ -175,6 +175,114 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <button class="btn-green" id="btn-login" onclick="doLogin()">Iniciar sesión</button>
     <button class="btn-link" onclick="goScreen('s-register')">¿No tienes cuenta? <span>Registrarse como Alumno</span></button>
     <button class="btn-link" style="margin-top:8px;color:var(--muted2);font-size:12px">¿Olvidaste tu contraseña? Contacta al administrador</button>
+    <button class="btn-link" onclick="goScreen('s-instalar')" style="margin-top:16px;color:var(--green);font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px"><span style="font-size:16px">📲</span> Instalar app en mi celular</button>
+  </div>
+</div>
+
+<!-- INSTALAR -->
+<div class="screen" id="s-instalar">
+  <div style="background:var(--surface);padding:52px 20px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="back-btn" onclick="goScreen('s-login')">←</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px">Instalar App</div>
+    </div>
+  </div>
+  <div class="scroll" style="padding-bottom:40px">
+    <div style="padding:20px 20px 0">
+      <div style="text-align:center;padding:24px 0 20px">
+        <div style="font-size:64px;margin-bottom:12px">📲</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:8px">Agrega K9 Fitness<br>a tu pantalla de inicio</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6">Funciona igual que una app nativa.<br>Sin App Store, sin Play Store, ¡gratis!</div>
+      </div>
+
+      <!-- iOS -->
+      <div style="background:var(--card);border-radius:18px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px">
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:16px 20px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:28px"></div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">iPhone / iPad</div>
+            <div style="font-size:12px;color:var(--muted)">Safari browser</div>
+          </div>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">1</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">Abre Safari</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Ve a <span style="color:var(--green-light);font-weight:600">k9fitness.pp.ua</span> en Safari (no Chrome)</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">2</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">Toca el botón Compartir</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Es el ícono <span style="background:var(--card2);padding:2px 8px;border-radius:6px;font-size:13px">⬆️</span> en la barra inferior del navegador</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">3</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">Añadir a pantalla de inicio</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Desplázate y toca <span style="color:var(--green-light);font-weight:600">"Añadir a pantalla de inicio"</span> → confirma tocando <span style="color:var(--green-light);font-weight:600">"Añadir"</span></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">4</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">¡Listo!</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">El ícono de K9 Fitness aparece en tu pantalla principal como una app nativa</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Android -->
+      <div style="background:var(--card);border-radius:18px;border:1px solid var(--border);overflow:hidden;margin-bottom:24px">
+        <div style="background:linear-gradient(135deg,#1a2e1a,#213e21);padding:16px 20px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:28px">🤖</div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Android</div>
+            <div style="font-size:12px;color:var(--muted)">Chrome browser</div>
+          </div>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">1</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">Abre Chrome</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Ve a <span style="color:var(--green-light);font-weight:600">k9fitness.pp.ua</span> en Google Chrome</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">2</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">Toca el menú ⋮</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Son los 3 puntitos en la esquina superior derecha del navegador</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">3</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">Añadir a pantalla de inicio</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Toca <span style="color:var(--green-light);font-weight:600">"Añadir a pantalla de inicio"</span> o <span style="color:var(--green-light);font-weight:600">"Instalar app"</span> → confirma</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">4</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">¡Listo!</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">K9 Fitness aparece en tu pantalla como app instalada. Android puede mostrar un banner automático de instalación</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:14px 16px;text-align:center;margin-bottom:10px">
+        <div style="font-size:13px;color:var(--green-light);line-height:1.6">✅ Sin descargas · ✅ Sin Play Store · ✅ Sin App Store<br>Actualiza solo cuando haya cambios · Funciona offline</div>
+      </div>
+
+      <button class="btn-green" onclick="goScreen('s-login')" style="margin-top:10px">← Volver al inicio de sesión</button>
+    </div>
   </div>
 </div>
 
