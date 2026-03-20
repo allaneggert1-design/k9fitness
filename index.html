@@ -460,7 +460,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="stat-row">
       <div class="stat"><div class="stat-n" id="prog-registros" style="font-size:22px">0</div><div class="stat-l">Registros</div></div>
       <div class="stat"><div class="stat-n" id="prog-peso" style="font-size:22px">—</div><div class="stat-l">Peso actual</div></div>
-      <div class="stat"><div class="stat-n" id="prog-grasa" style="font-size:22px">—</div><div class="stat-l">% Grasa</div></div>
+      <div class="stat" style="cursor:pointer" onclick="navTo('nutricion')"><div class="stat-n" style="font-size:22px">🥗</div><div class="stat-l">Nutrición</div></div>
     </div>
     <div class="section">
       <div class="sec-title">Medidas más recientes</div>
@@ -744,6 +744,115 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   </div>
 </div>
 
+<!-- NUTRICION -->
+<div class="screen" id="s-nutricion">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-progreso')">←</div>
+      <h1>🥗 <span>Nutrición</span></h1>
+      <div id="nutri-date" style="font-size:12px;color:var(--muted)"></div>
+    </div>
+  </div>
+  <div class="scroll">
+
+    <!-- Resumen del día -->
+    <div style="padding:14px 20px 0">
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:14px">Resumen de hoy</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;margin-bottom:14px">
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#e74c3c" id="nutri-cal-display">0</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">kcal</div>
+          </div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#3498db" id="nutri-prot-display">0g</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Proteína</div>
+          </div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#f39c12" id="nutri-carb-display">0g</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Carbos</div>
+          </div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#2ecc71" id="nutri-fat-display">0g</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Grasas</div>
+          </div>
+        </div>
+        <!-- Barra de macros -->
+        <div style="height:8px;border-radius:4px;overflow:hidden;background:var(--border);display:flex;gap:2px" id="macro-bar">
+          <div id="macro-prot-bar" style="height:100%;background:#3498db;transition:width .5s;width:0%"></div>
+          <div id="macro-carb-bar" style="height:100%;background:#f39c12;transition:width .5s;width:0%"></div>
+          <div id="macro-fat-bar" style="height:100%;background:#2ecc71;transition:width .5s;width:0%"></div>
+        </div>
+        <div style="display:flex;gap:14px;justify-content:center;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:50%;background:#3498db"></div>Proteína</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:50%;background:#f39c12"></div>Carbos</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:50%;background:#2ecc71"></div>Grasas</div>
+        </div>
+      </div>
+
+      <!-- Agua -->
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600">💧 Agua</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#3498db" id="nutri-agua-display">0 ml</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="addAgua(250)" style="flex:1;background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);border-radius:10px;padding:8px;color:#3498db;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+250ml</button>
+          <button onclick="addAgua(500)" style="flex:1;background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);border-radius:10px;padding:8px;color:#3498db;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+500ml</button>
+          <button onclick="addAgua(1000)" style="flex:1;background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);border-radius:10px;padding:8px;color:#3498db;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+1L</button>
+        </div>
+        <div style="margin-top:10px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div id="agua-bar" style="height:100%;background:#3498db;border-radius:3px;transition:width .5s;width:0%"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;text-align:center" id="agua-meta-text">Meta: 2000ml / día</div>
+      </div>
+
+      <!-- Registro -->
+      <div class="sec-title">Registrar comida</div>
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="input-group" style="margin:0">
+            <label class="input-label">Calorías</label>
+            <input class="input-field" type="number" id="nutri-cal" placeholder="ej: 500">
+          </div>
+          <div class="input-group" style="margin:0">
+            <label class="input-label">Proteína (g)</label>
+            <input class="input-field" type="number" id="nutri-prot" placeholder="ej: 30">
+          </div>
+          <div class="input-group" style="margin:0">
+            <label class="input-label">Carbohidratos (g)</label>
+            <input class="input-field" type="number" id="nutri-carb" placeholder="ej: 60">
+          </div>
+          <div class="input-group" style="margin:0">
+            <label class="input-label">Grasas (g)</label>
+            <input class="input-field" type="number" id="nutri-fat" placeholder="ej: 15">
+          </div>
+        </div>
+        <div class="input-group" style="margin-bottom:12px">
+          <label class="input-label">Notas (opcional)</label>
+          <input class="input-field" id="nutri-notas" placeholder="ej: Almuerzo — pollo con arroz">
+        </div>
+        <!-- Quick foods -->
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;font-weight:600">Agregar rápido</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <button onclick="quickFood(30,25,0,2,'Proteína whey')" style="background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#3498db;cursor:pointer;font-family:'Barlow',sans-serif">🥛 Whey +30g prot</button>
+          <button onclick="quickFood(350,25,40,10,'Pollo con arroz')" style="background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#2ecc71;cursor:pointer;font-family:'Barlow',sans-serif">🍗 Pollo + arroz</button>
+          <button onclick="quickFood(80,17,0,1,'Claras de huevo')" style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#f39c12;cursor:pointer;font-family:'Barlow',sans-serif">🥚 Claras</button>
+          <button onclick="quickFood(160,0,0,18,'Aguacate')" style="background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#2ecc71;cursor:pointer;font-family:'Barlow',sans-serif">🥑 Aguacate</button>
+          <button onclick="quickFood(200,8,30,8,'Avena')" style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#f39c12;cursor:pointer;font-family:'Barlow',sans-serif">🌾 Avena</button>
+        </div>
+        <button class="btn-green" onclick="saveNutricion()">💾 Guardar registro</button>
+      </div>
+
+      <!-- Historial del día -->
+      <div class="sec-title">Registros de hoy</div>
+      <div id="nutri-historial" style="margin-bottom:20px">
+        <div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Sin registros hoy</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- HISTORIAL -->
 <div class="screen" id="s-historial">
   <div class="topbar">
@@ -958,6 +1067,105 @@ function loadMedidas(p){
 let allProgresoData=[];
 let currentChartField='peso';
 let chartInstance=null;
+
+// ─── NUTRICIÓN ────────────────────────────────────────────────────────────────
+let nutriTodayData=[];
+let nutriTodayTotals={cal:0,prot:0,carb:0,fat:0,agua:0};
+
+async function loadNutricion(){
+  if(!currentUser)return;
+  const today=new Date().toISOString().split('T')[0];
+  const dateEl=document.getElementById('nutri-date');
+  if(dateEl) dateEl.textContent=new Date().toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+
+  const {data}=await supa.from('nutricion').select('*').eq('alumno_email',currentUser.email).eq('fecha',today).order('created_at',{ascending:true});
+  nutriTodayData=data||[];
+
+  // Calculate totals
+  nutriTodayTotals={cal:0,prot:0,carb:0,fat:0,agua:0};
+  nutriTodayData.forEach(r=>{
+    nutriTodayTotals.cal+=r.calorias||0;
+    nutriTodayTotals.prot+=r.proteina_g||0;
+    nutriTodayTotals.carb+=r.carbohidratos_g||0;
+    nutriTodayTotals.fat+=r.grasas_g||0;
+    nutriTodayTotals.agua+=r.agua_ml||0;
+  });
+  updateNutriDisplay();
+}
+
+function updateNutriDisplay(){
+  const t=nutriTodayTotals;
+  document.getElementById('nutri-cal-display').textContent=Math.round(t.cal);
+  document.getElementById('nutri-prot-display').textContent=Math.round(t.prot)+'g';
+  document.getElementById('nutri-carb-display').textContent=Math.round(t.carb)+'g';
+  document.getElementById('nutri-fat-display').textContent=Math.round(t.fat)+'g';
+  document.getElementById('nutri-agua-display').textContent=t.agua+'ml';
+
+  // Macro bar
+  const totalMacros=(t.prot*4)+(t.carb*4)+(t.fat*9)||1;
+  document.getElementById('macro-prot-bar').style.width=((t.prot*4/totalMacros)*100)+'%';
+  document.getElementById('macro-carb-bar').style.width=((t.carb*4/totalMacros)*100)+'%';
+  document.getElementById('macro-fat-bar').style.width=((t.fat*9/totalMacros)*100)+'%';
+
+  // Water bar (goal 2000ml)
+  const aguaPct=Math.min(100,(t.agua/2000)*100);
+  document.getElementById('agua-bar').style.width=aguaPct+'%';
+  document.getElementById('agua-meta-text').textContent=`${t.agua}ml de 2000ml (${Math.round(aguaPct)}%)`;
+
+  // Historial
+  const hist=document.getElementById('nutri-historial');
+  if(hist){
+    if(!nutriTodayData.filter(r=>r.calorias).length){
+      hist.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Sin registros hoy</div>';
+    } else {
+      hist.innerHTML=nutriTodayData.filter(r=>r.calorias).map(r=>`
+        <div style="background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:8px;display:flex;align-items:center;gap:12px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px">${r.notas||'Comida registrada'}</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              ${r.calorias?`<span style="font-size:11px;color:#e74c3c">${r.calorias} kcal</span>`:''}
+              ${r.proteina_g?`<span style="font-size:11px;color:#3498db">${r.proteina_g}g prot</span>`:''}
+              ${r.carbohidratos_g?`<span style="font-size:11px;color:#f39c12">${r.carbohidratos_g}g carbs</span>`:''}
+              ${r.grasas_g?`<span style="font-size:11px;color:#2ecc71">${r.grasas_g}g grasas</span>`:''}
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">${formatChatTime(r.created_at)}</div>
+        </div>`).join('');
+    }
+  }
+}
+
+async function saveNutricion(){
+  if(!currentUser)return;
+  const cal=parseFloat(document.getElementById('nutri-cal').value)||null;
+  const prot=parseFloat(document.getElementById('nutri-prot').value)||null;
+  const carb=parseFloat(document.getElementById('nutri-carb').value)||null;
+  const fat=parseFloat(document.getElementById('nutri-fat').value)||null;
+  const notas=document.getElementById('nutri-notas').value.trim()||null;
+  if(!cal&&!prot&&!carb&&!fat){showToast('⚠️ Agrega al menos un valor','error');return;}
+  const {error}=await supa.from('nutricion').insert({alumno_email:currentUser.email,fecha:new Date().toISOString().split('T')[0],calorias:cal,proteina_g:prot,carbohidratos_g:carb,grasas_g:fat,notas});
+  if(error){showToast('⚠️ Error al guardar','error');return;}
+  showToast('✓ Registro guardado');
+  ['nutri-cal','nutri-prot','nutri-carb','nutri-fat','nutri-notas'].forEach(id=>document.getElementById(id).value='');
+  await loadNutricion();
+}
+
+async function addAgua(ml){
+  if(!currentUser)return;
+  const today=new Date().toISOString().split('T')[0];
+  await supa.from('nutricion').insert({alumno_email:currentUser.email,fecha:today,agua_ml:ml,notas:'Agua'});
+  nutriTodayTotals.agua+=ml;
+  updateNutriDisplay();
+  showToast(`💧 +${ml}ml de agua registrados`);
+}
+
+function quickFood(cal,prot,carb,fat,nombre){
+  document.getElementById('nutri-cal').value=cal;
+  document.getElementById('nutri-prot').value=prot;
+  document.getElementById('nutri-carb').value=carb;
+  document.getElementById('nutri-fat').value=fat;
+  document.getElementById('nutri-notas').value=nombre;
+}
 
 // ─── MAPA MUSCULAR ────────────────────────────────────────────────────────────
 const MUSCLE_REGIONS_FRONT=[
@@ -1246,13 +1454,14 @@ function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classLis
 function goBack(to){goScreen(to);}
 function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
-  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial'};
+  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion'};
   goScreen(m[tab]);
   if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();loadMuscleMap();},100);
   if(tab==='perfil') loadPerfil();
   if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
   if(tab==='notificaciones') loadNotificaciones();
   if(tab==='historial') loadHistorialFull();
+  if(tab==='nutricion') loadNutricion();
 }
 
 function loadPerfil(){
