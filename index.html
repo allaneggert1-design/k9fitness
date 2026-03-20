@@ -933,15 +933,32 @@ function openFreedDetail(id){
   if(sec){ document.getElementById('ex-detail-secondary').textContent = sec; secSec.style.display = ''; }
   else secSec.style.display = 'none';
 
-  // Instructions
+  // Instructions — translate to Spanish via Claude API
   const instrSec = document.getElementById('ex-sec-instructions');
   if(ex.instructions && ex.instructions.length){
-    document.getElementById('ex-detail-instructions').innerHTML = ex.instructions.map((s,i) =>
+    const instrEl = document.getElementById('ex-detail-instructions');
+    // Show original while translating
+    instrEl.innerHTML = ex.instructions.map((s,i) =>
       `<div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;line-height:1.6">
         <span style="background:var(--green);color:#fff;border-radius:50%;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px">${i+1}</span>
-        <span style="color:var(--text)">${s}</span>
-      </div>`).join('');
+        <span style="color:var(--muted)">${s}</span>
+      </div>`).join('') + '<div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">⏳ Traduciendo...</div>';
     instrSec.style.display = '';
+    // Translate with Claude
+    translateInstructions(ex.instructions, ex.name).then(translated => {
+      instrEl.innerHTML = translated.map((s,i) =>
+        `<div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;line-height:1.6">
+          <span style="background:var(--green);color:#fff;border-radius:50%;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px">${i+1}</span>
+          <span style="color:var(--text)">${s}</span>
+        </div>`).join('');
+    }).catch(()=>{
+      // Remove "Traduciendo..." on error, keep original
+      instrEl.innerHTML = ex.instructions.map((s,i) =>
+        `<div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;line-height:1.6">
+          <span style="background:var(--green);color:#fff;border-radius:50%;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px">${i+1}</span>
+          <span style="color:var(--text)">${s}</span>
+        </div>`).join('');
+    });
   } else instrSec.style.display = 'none';
 
   document.getElementById('ex-sec-local').style.display = 'none';
@@ -974,6 +991,42 @@ function openLocalDetail(id){
 function openExDetail(id){
   openLocalDetail(id);
   document.getElementById('ex-back-btn').setAttribute('onclick',"goBack('s-entrenar')");
+}
+
+// ─── TRANSLATION VIA CLAUDE API ───────────────────────────────────────────────
+const TRANS_CACHE = {};
+async function translateInstructions(instructions, exerciseName){
+  const cacheKey = 'trans_' + exerciseName;
+  // Check memory cache
+  if(TRANS_CACHE[cacheKey]) return TRANS_CACHE[cacheKey];
+  // Check localStorage cache
+  try{
+    const stored = localStorage.getItem(cacheKey);
+    if(stored){ TRANS_CACHE[cacheKey]=JSON.parse(stored); return TRANS_CACHE[cacheKey]; }
+  }catch(e){}
+
+  const prompt = `Translate these gym exercise instructions from English to Spanish. Return ONLY a JSON array of strings, one string per instruction, no extra text, no markdown.
+
+Exercise: ${exerciseName}
+Instructions: ${JSON.stringify(instructions)}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user', content: prompt}]
+    })
+  });
+  const data = await res.json();
+  const text = data.content[0].text.trim();
+  const clean = text.replace(/```json|```/g,'').trim();
+  const translated = JSON.parse(clean);
+  // Save to cache
+  TRANS_CACHE[cacheKey] = translated;
+  try{ localStorage.setItem(cacheKey, JSON.stringify(translated)); }catch(e){}
+  return translated;
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
