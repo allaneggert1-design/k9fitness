@@ -439,6 +439,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
         <div class="stat"><div class="stat-n" id="perfil-stat3">—</div><div class="stat-l">Peso actual</div></div>
       </div>
 
+      <div class="sec-title">Logros <span id="logros-count" style="color:var(--green-light);font-size:13px"></span></div>
+      <div id="logros-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+        <div style="text-align:center;padding:16px 8px;background:var(--card);border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:32px;margin-bottom:6px;filter:grayscale(1);opacity:.4">🏅</div>
+          <div style="font-size:10px;color:var(--muted2);font-weight:600;text-transform:uppercase">Cargando...</div>
+        </div>
+      </div>
+
       <div class="sec-title">Cuenta</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
         <button onclick="showToast('Función disponible próximamente 🔔')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
@@ -875,13 +883,48 @@ function loadPerfil(){
   document.getElementById('perfil-plan-badge').textContent=plan;
   document.getElementById('perfil-stat1').textContent=weeks;
 
-  // Load stats from DB
-  supa.from('progreso').select('*',{count:'exact',head:true}).eq('alumno_email',currentUser.email).then(({count})=>{
-    document.getElementById('perfil-stat2').textContent=count||0;
+  // Load stats + logros from DB
+  Promise.all([
+    supa.from('progreso').select('*').eq('alumno_email',currentUser.email).order('fecha',{ascending:true}),
+    supa.from('rutinas').select('dia').eq('alumno_email',currentUser.email)
+  ]).then(([{data:prog},{data:ruts}])=>{
+    const registros=prog?.length||0;
+    const lastPeso=prog&&prog.length>prog.filter(p=>!p.peso_kg).length?prog.filter(p=>p.peso_kg).slice(-1)[0]?.peso_kg:null;
+    document.getElementById('perfil-stat2').textContent=registros;
+    document.getElementById('perfil-stat3').textContent=lastPeso?(lastPeso+'kg'):'—';
+    renderLogros(registros,weeks,ruts?.length||0,prog||[]);
   });
-  supa.from('progreso').select('peso_kg').eq('alumno_email',currentUser.email).order('fecha',{ascending:false}).limit(1).then(({data})=>{
-    document.getElementById('perfil-stat3').textContent=data&&data[0]?.peso_kg?(data[0].peso_kg+'kg'):'—';
-  });
+}
+
+const LOGROS_DEF=[
+  {id:'primer_registro',icon:'🌱',name:'Primer paso',desc:'Registra tus primeras medidas',check:(r,w,d,p)=>p.length>=1},
+  {id:'semana1',icon:'📅',name:'1 semana',desc:'1 semana como miembro',check:(r,w)=>w>=1},
+  {id:'semana4',icon:'🗓️',name:'1 mes',desc:'4 semanas como miembro',check:(r,w)=>w>=4},
+  {id:'semana12',icon:'🏆',name:'3 meses',desc:'12 semanas como miembro',check:(r,w)=>w>=12},
+  {id:'reg5',icon:'📊',name:'5 registros',desc:'5 registros de medidas',check:(r)=>r>=5},
+  {id:'reg10',icon:'📈',name:'10 registros',desc:'10 registros de medidas',check:(r)=>r>=10},
+  {id:'reg25',icon:'🔬',name:'25 registros',desc:'25 registros de medidas',check:(r)=>r>=25},
+  {id:'peso_bajo',icon:'⚖️',name:'Control de peso',desc:'Registra tu peso 3 veces',check:(r,w,d,p)=>p.filter(x=>x.peso_kg).length>=3},
+  {id:'constante',icon:'🔥',name:'Constancia',desc:'10 registros de medidas',check:(r)=>r>=10},
+  {id:'rutina',icon:'💪',name:'Con rutina',desc:'Tienes ejercicios asignados',check:(r,w,d)=>d>=1},
+  {id:'grasa',icon:'🎯',name:'Control grasa',desc:'Registra tu grasa 3 veces',check:(r,w,d,p)=>p.filter(x=>x.grasa_porcentaje).length>=3},
+  {id:'medidas',icon:'📏',name:'Medidas completas',desc:'Registra todas las medidas',check:(r,w,d,p)=>p.some(x=>x.pecho_cm&&x.cintura_cm&&x.brazos_cm&&x.piernas_cm)},
+];
+
+function renderLogros(registros,weeks,dias,prog){
+  const grid=document.getElementById('logros-grid');
+  const countEl=document.getElementById('logros-count');
+  if(!grid)return;
+  const earned=LOGROS_DEF.filter(l=>l.check(registros,weeks,dias,prog));
+  if(countEl)countEl.textContent=earned.length+'/'+LOGROS_DEF.length;
+  grid.innerHTML=LOGROS_DEF.map(l=>{
+    const done=l.check(registros,weeks,dias,prog);
+    return `<div style="text-align:center;padding:14px 8px;background:${done?'rgba(91,168,50,0.08)':'var(--card)'};border-radius:14px;border:1px solid ${done?'var(--green)':'var(--border)'};transition:all .3s" title="${l.desc}">
+      <div style="font-size:28px;margin-bottom:6px;${done?'':'filter:grayscale(1);opacity:.3'}">${l.icon}</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:${done?'var(--green-light)':'var(--muted2)'};line-height:1.3">${l.name}</div>
+      ${done?`<div style="font-size:9px;color:var(--green-dark);margin-top:3px">✓ logrado</div>`:`<div style="font-size:9px;color:var(--muted2);margin-top:3px">${l.desc}</div>`}
+    </div>`;
+  }).join('');
 }
 
 function confirmLogout(){
