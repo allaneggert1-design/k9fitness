@@ -474,6 +474,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
       </div>
     </div>
     <div class="section">
+      <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+        Mapa muscular
+        <div style="display:flex;gap:6px">
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:#e74c3c"></div>Hoy</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:#f39c12"></div>Esta semana</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:var(--border)"></div>Descansado</div>
+        </div>
+      </div>
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:20px">
+        <div style="display:flex;gap:16px;justify-content:center" id="muscle-map-container">
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Frontal</div>
+            <svg id="muscle-front" width="110" height="220" viewBox="0 0 110 220"></svg>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Posterior</div>
+            <svg id="muscle-back" width="110" height="220" viewBox="0 0 110 220"></svg>
+          </div>
+        </div>
+        <div id="muscle-legend" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
       <div class="sec-title">Evolución de peso</div>
       <div style="background:var(--card);border-radius:16px;padding:18px;border:1px solid var(--border)">
         <div style="display:flex;gap:8px;margin-bottom:14px" id="chart-tabs">
@@ -937,6 +959,82 @@ let allProgresoData=[];
 let currentChartField='peso';
 let chartInstance=null;
 
+// ─── MAPA MUSCULAR ────────────────────────────────────────────────────────────
+const MUSCLE_REGIONS_FRONT=[
+  {id:'cabeza',   label:'',            c:'#2A2A2A', p:'M40,20 Q40,2 55,2 Q70,2 70,20 Q70,36 55,36 Q40,36 40,20Z'},
+  {id:'cuello',   label:'Cuello',      c:'#333',    p:'M46,36 Q44,28 48,24 Q55,22 62,24 Q66,28 64,36 Q60,40 55,40 Q50,40 46,36Z'},
+  {id:'hombros',  label:'Hombros',     c:'#555',    p:'M22,58 Q16,50 20,44 Q28,38 36,44 Q40,54 36,62 Q28,64 22,58Z M88,58 Q82,64 74,62 Q70,54 74,44 Q82,38 90,44 Q94,50 88,58Z'},
+  {id:'pecho',    label:'Pecho',       c:'#555',    p:'M36,62 Q30,72 32,88 Q42,94 55,92 Q68,94 78,88 Q80,72 74,62 Q64,58 55,58 Q46,58 36,62Z'},
+  {id:'biceps',   label:'Bíceps',      c:'#555',    p:'M20,66 Q14,78 16,92 Q22,96 28,92 Q32,80 30,66 Q26,62 20,66Z M90,66 Q84,62 80,66 Q78,80 82,92 Q88,96 94,92 Q96,78 90,66Z'},
+  {id:'antebrazo_f',label:'Antebrazos',c:'#555',    p:'M16,94 Q10,108 12,120 Q18,124 24,120 Q28,108 28,94Z M82,94 Q82,108 86,120 Q92,124 98,120 Q100,108 94,94Z'},
+  {id:'abdomen',  label:'Abdominales', c:'#555',    p:'M36,90 Q32,112 34,136 Q44,142 55,140 Q66,142 76,136 Q78,112 74,90 Q64,86 55,88 Q46,86 36,90Z'},
+  {id:'cuadriceps',label:'Cuádriceps', c:'#555',    p:'M34,148 Q26,172 28,198 Q38,204 46,198 Q52,172 50,148 Q42,144 34,148Z M76,148 Q68,144 60,148 Q58,172 64,198 Q72,204 82,198 Q84,172 76,148Z'},
+  {id:'gemelos_f',label:'Gemelos',     c:'#555',    p:'M30,200 Q26,214 28,222 Q36,226 42,222 Q46,210 44,200 Q38,197 30,200Z M80,200 Q72,197 66,200 Q64,210 68,222 Q74,226 82,222 Q84,214 80,200Z'},
+];
+const MUSCLE_REGIONS_BACK=[
+  {id:'cabeza_b', label:'',            c:'#2A2A2A', p:'M40,20 Q40,2 55,2 Q70,2 70,20 Q70,36 55,36 Q40,36 40,20Z'},
+  {id:'trapecio', label:'Trapecio',    c:'#555',    p:'M36,44 Q30,54 34,62 Q44,66 55,64 Q66,66 76,62 Q80,54 74,44 Q66,38 55,38 Q44,38 36,44Z'},
+  {id:'hombros_b',label:'Deltoides',   c:'#555',    p:'M22,58 Q14,50 18,44 Q26,38 34,44 Q38,54 34,62 Q26,64 22,58Z M88,58 Q84,64 76,62 Q72,54 76,44 Q84,38 92,44 Q96,50 88,58Z'},
+  {id:'triceps',  label:'Tríceps',     c:'#555',    p:'M18,66 Q12,80 14,94 Q20,98 26,94 Q30,80 28,66 Q24,62 18,66Z M92,66 Q86,62 82,66 Q80,80 84,94 Q90,98 96,94 Q98,80 92,66Z'},
+  {id:'dorsal',   label:'Dorsal ancho',c:'#555',    p:'M28,66 Q22,84 24,106 Q36,114 55,112 Q74,114 86,106 Q88,84 82,66 Q72,60 55,62 Q38,60 28,66Z'},
+  {id:'lumbar',   label:'Zona lumbar', c:'#555',    p:'M38,110 Q32,126 34,138 Q44,144 55,142 Q66,144 76,138 Q78,126 72,110 Q64,106 55,108 Q46,106 38,110Z'},
+  {id:'gluteos',  label:'Glúteos',     c:'#555',    p:'M32,138 Q24,156 28,168 Q40,174 55,172 Q70,174 82,168 Q86,156 78,138 Q68,134 55,134 Q42,134 32,138Z'},
+  {id:'isquio',   label:'Isquiotibiales',c:'#555',  p:'M30,170 Q22,190 24,202 Q34,208 42,204 Q50,186 48,170 Q40,166 30,170Z M80,170 Q70,166 62,170 Q60,186 68,204 Q76,208 86,202 Q88,190 80,170Z'},
+  {id:'gemelos_b',label:'Gemelos',     c:'#555',    p:'M26,204 Q22,216 24,224 Q32,228 38,224 Q42,212 40,204 Q34,200 26,204Z M84,204 Q76,200 70,204 Q68,212 72,224 Q78,228 86,224 Q88,216 84,204Z'},
+];
+const MUSCLE_MAP_KEYS={
+  'pecho':['pecho'],'chest':['pecho'],
+  'hombros':['hombros','hombros_b'],'shoulders':['hombros','hombros_b'],'deltoides':['hombros','hombros_b'],
+  'biceps':['biceps'],'bíceps':['biceps'],
+  'triceps':['triceps'],'tríceps':['triceps'],
+  'espalda':['dorsal','trapecio'],'dorsal':['dorsal'],'trapecio':['trapecio'],
+  'lumbar':['lumbar'],'lower back':['lumbar'],
+  'cuadriceps':['cuadriceps'],'piernas':['cuadriceps','isquio','gluteos','gemelos_f','gemelos_b'],
+  'isquiotibiales':['isquio'],'hamstrings':['isquio'],
+  'gluteos':['gluteos'],'glutes':['gluteos'],'glúteos':['gluteos'],
+  'gemelos':['gemelos_f','gemelos_b'],'calves':['gemelos_f','gemelos_b'],
+  'core':['abdomen'],'abdominales':['abdomen'],
+  'antebrazos':['antebrazo_f'],'forearms':['antebrazo_f'],
+};
+
+async function loadMuscleMap(){
+  if(!currentUser)return;
+  const weekAgo=new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+  const dayName=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date().getDay()];
+  const [{data:rutHoy},{data:prsWeek}]=await Promise.all([
+    supa.from('rutinas').select('ejercicio_nombre').eq('alumno_email',currentUser.email).eq('dia',dayName),
+    supa.from('records_personales').select('ejercicio').eq('alumno_email',currentUser.email).gte('fecha',weekAgo)
+  ]);
+  const todaySet=new Set(),weekSet=new Set();
+  const mapMuscles=(name,set)=>{
+    const n=name.toLowerCase();
+    Object.keys(MUSCLE_MAP_KEYS).forEach(k=>{if(n.includes(k))MUSCLE_MAP_KEYS[k].forEach(m=>set.add(m));});
+  };
+  (rutHoy||[]).forEach(r=>mapMuscles(r.ejercicio_nombre||'',todaySet));
+  (prsWeek||[]).forEach(r=>mapMuscles(r.ejercicio||'',weekSet));
+
+  renderMuscleSVG('muscle-front',MUSCLE_REGIONS_FRONT,todaySet,weekSet);
+  renderMuscleSVG('muscle-back',MUSCLE_REGIONS_BACK,todaySet,weekSet);
+
+  const allIds=[...new Set([...todaySet,...weekSet])];
+  const labels=[...new Set(allIds.map(id=>[...MUSCLE_REGIONS_FRONT,...MUSCLE_REGIONS_BACK].find(r=>r.id===id)?.label||'').filter(Boolean))];
+  const legendEl=document.getElementById('muscle-legend');
+  if(legendEl) legendEl.innerHTML=labels.length
+    ?labels.map(l=>`<div style="background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#e74c3c">${l}</div>`).join('')
+    :'<div style="font-size:12px;color:var(--muted);width:100%;text-align:center;padding:4px 0">Completa un entrenamiento para ver los músculos activados</div>';
+}
+
+function renderMuscleSVG(svgId,regions,todaySet,weekSet){
+  const svg=document.getElementById(svgId);if(!svg)return;
+  svg.innerHTML=regions.map(r=>{
+    const t=todaySet.has(r.id),w=weekSet.has(r.id)&&!t;
+    const fill=t?'#e74c3c':w?'#f39c12':r.c;
+    const op=t?.95:w?.7:1;
+    const glow=t?'filter:drop-shadow(0 0 5px rgba(231,76,60,.7))':'';
+    return `<path d="${r.p}" fill="${fill}" fill-opacity="${op}" stroke="${t?'#c0392b':w?'#d68910':'#333'}" stroke-width="0.8" style="${glow}"/>`;
+  }).join('');
+}
+
 async function loadProgresoChart(){
   if(!currentUser)return;
   const {data}=await supa.from('progreso').select('*').eq('alumno_email',currentUser.email).order('fecha',{ascending:true}).limit(20);
@@ -1150,7 +1248,7 @@ function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
   const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial'};
   goScreen(m[tab]);
-  if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();},100);
+  if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();loadMuscleMap();},100);
   if(tab==='perfil') loadPerfil();
   if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
   if(tab==='notificaciones') loadNotificaciones();
