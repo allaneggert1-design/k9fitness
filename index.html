@@ -483,18 +483,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 
 <!-- MENSAJES -->
 <div class="screen" id="s-mensajes">
-  <div class="topbar"><div class="topbar-row"><h1><span>K9</span> Mensajes</h1></div></div>
-  <div class="scroll">
-    <div id="mensajes-list">
-      <div class="chat-item">
-        <div class="chat-av" style="background:linear-gradient(135deg,#333,#555)">K9</div>
-        <div style="flex:1"><div class="chat-name">K9 Fitness — Bienvenida</div><div class="chat-prev">¡Bienvenido/a a K9 Fitness Academia! 🏋️</div></div>
-        <div style="font-size:11px;color:var(--muted)">Hoy</div>
-      </div>
+  <div class="topbar">
+    <div class="topbar-row">
+      <h1><span>K9</span> Mensajes</h1>
+      <button onclick="showNuevoMensaje()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+ Nuevo</button>
     </div>
-    <div style="padding:20px 20px 12px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Notificaciones</div>
-    <div class="notif-card"><div class="notif-icon">🏆</div><div><div class="notif-title">¡Bienvenido/a a K9 Fitness!</div><div class="notif-sub">Tu perfil está listo. Tu entrenador configurará tu rutina pronto.</div></div></div>
-    <div class="notif-card"><div class="notif-icon">📚</div><div><div class="notif-title">Biblioteca disponible</div><div class="notif-sub">Explora más de 800 ejercicios con imágenes y instrucciones.</div></div></div>
+  </div>
+  <div class="scroll" id="mensajes-scroll">
+    <div id="mensajes-list">
+      <div class="lib-loading"><div class="lib-spinner"></div><span>Cargando mensajes...</span></div>
+    </div>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
@@ -502,6 +500,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
+  </div>
+</div>
+
+<!-- CHAT DETALLE -->
+<div class="screen" id="s-chat">
+  <div style="background:var(--surface);padding:52px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="back-btn" onclick="goScreen('s-mensajes')">←</div>
+      <div id="chat-av-header" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">ML</div>
+      <div>
+        <div id="chat-name-header" style="font-size:15px;font-weight:600">Entrenador</div>
+        <div id="chat-status-header" style="font-size:11px;color:var(--green-light)">● En línea</div>
+      </div>
+    </div>
+  </div>
+  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px 16px 0;scrollbar-width:none;display:flex;flex-direction:column;gap:10px"></div>
+  <div style="padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;padding-bottom:max(16px,env(safe-area-inset-bottom))">
+    <textarea id="chat-input" placeholder="Escribe un mensaje..." rows="1" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:10px 16px;font-size:14px;color:var(--text);font-family:'Barlow',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}"></textarea>
+    <button onclick="sendChatMsg()" style="width:42px;height:42px;background:var(--green);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:18px">➤</button>
   </div>
 </div>
 
@@ -968,6 +985,7 @@ function navTo(tab){
   goScreen(m[tab]);
   if(tab==='progreso') setTimeout(()=>loadProgresoChart(),100);
   if(tab==='perfil') loadPerfil();
+  if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
 }
 
 function loadPerfil(){
@@ -1039,6 +1057,112 @@ function confirmLogout(){
   if(confirm('¿Seguro que quieres cerrar sesión?')){
     supaLogout();
   }
+}
+
+// ─── MENSAJES / CHAT ──────────────────────────────────────────────────────────
+let activeChatWith=null;
+let chatPollInterval=null;
+
+async function loadMensajesList(){
+  if(!currentUser)return;
+  const list=document.getElementById('mensajes-list');
+  if(!list)return;
+  const [{data:sent},{data:recv}]=await Promise.all([
+    supa.from('mensajes').select('*').eq('de_email',currentUser.email).order('created_at',{ascending:false}),
+    supa.from('mensajes').select('*').eq('para_email',currentUser.email).order('created_at',{ascending:false})
+  ]);
+  const convMap={};
+  [...(sent||[]),...(recv||[])].forEach(m=>{
+    const partner=m.de_email===currentUser.email?m.para_email:m.de_email;
+    const partnerName=m.de_email===currentUser.email?(m.para_nombre||m.para_email):(m.de_nombre||m.de_email);
+    if(!convMap[partner]||new Date(m.created_at)>new Date(convMap[partner].created_at)){
+      convMap[partner]={...m,partnerEmail:partner,partnerName};
+    }
+  });
+  const convs=Object.values(convMap).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  if(!convs.length){
+    list.innerHTML=`<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">💬</div>No tienes mensajes aún.<br>Tu entrenador puede escribirte aquí.</div>`;
+    return;
+  }
+  list.innerHTML=convs.map(c=>{
+    const initials=(c.partnerName||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const isUnread=c.para_email===currentUser.email&&!c.leido;
+    const preview=c.mensaje.length>45?c.mensaje.slice(0,45)+'...':c.mensaje;
+    return `<div class="chat-item" onclick="openChat('${c.partnerEmail}','${(c.partnerName||'').replace(/'/g,"\\'")}')">
+      <div class="chat-av">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div class="chat-name" style="${isUnread?'font-weight:700':''}">${c.partnerName||c.partnerEmail}</div>
+        <div class="chat-prev" style="${isUnread?'color:var(--text)':''}">${preview}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:11px;color:var(--muted)">${formatChatTime(c.created_at)}</div>
+        ${isUnread?'<div class="chat-badge">●</div>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatChatTime(iso){
+  if(!iso)return '';
+  const d=new Date(iso),now=new Date(),diff=now-d;
+  if(diff<60000)return 'Ahora';
+  if(diff<3600000)return Math.floor(diff/60000)+'m';
+  if(diff<86400000)return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+  return d.getDate()+'/'+(d.getMonth()+1);
+}
+
+async function openChat(partnerEmail,partnerName){
+  activeChatWith={email:partnerEmail,name:partnerName};
+  const initials=(partnerName||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('chat-av-header').textContent=initials;
+  document.getElementById('chat-name-header').textContent=partnerName||partnerEmail;
+  document.getElementById('chat-messages').innerHTML='<div class="lib-loading"><div class="lib-spinner"></div></div>';
+  goScreen('s-chat');
+  await loadChatMessages();
+  await supa.from('mensajes').update({leido:true}).eq('para_email',currentUser.email).eq('de_email',partnerEmail);
+  if(chatPollInterval)clearInterval(chatPollInterval);
+  chatPollInterval=setInterval(loadChatMessages,5000);
+}
+
+async function loadChatMessages(){
+  if(!activeChatWith||!currentUser)return;
+  const [{data:sent},{data:recv}]=await Promise.all([
+    supa.from('mensajes').select('*').eq('de_email',currentUser.email).eq('para_email',activeChatWith.email),
+    supa.from('mensajes').select('*').eq('de_email',activeChatWith.email).eq('para_email',currentUser.email)
+  ]);
+  const all=[...(sent||[]),...(recv||[])].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const container=document.getElementById('chat-messages');
+  if(!container)return;
+  const atBottom=container.scrollHeight-container.scrollTop-container.clientHeight<80;
+  container.innerHTML=all.length?all.map(m=>{
+    const isMe=m.de_email===currentUser.email;
+    return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};gap:2px">
+      <div style="max-width:78%;background:${isMe?'var(--green)':'var(--card)'};color:${isMe?'#fff':'var(--text)'};padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};font-size:14px;line-height:1.5;word-break:break-word;border:${isMe?'none':'1px solid var(--border)'}">${m.mensaje}</div>
+      <div style="font-size:10px;color:var(--muted);padding:0 4px">${formatChatTime(m.created_at)}</div>
+    </div>`;
+  }).join(''):'<div class="empty-state">Inicia la conversación 👋</div>';
+  if(atBottom||all.length<=3)container.scrollTop=container.scrollHeight;
+}
+
+async function sendChatMsg(){
+  const input=document.getElementById('chat-input');
+  const msg=(input?.value||'').trim();
+  if(!msg||!activeChatWith||!currentUser)return;
+  input.value='';input.style.height='auto';
+  const myName=currentProfile?.full_name||currentUser.email;
+  const {error}=await supa.from('mensajes').insert({
+    de_email:currentUser.email,de_nombre:myName,
+    para_email:activeChatWith.email,para_nombre:activeChatWith.name,
+    mensaje:msg,leido:false
+  });
+  if(error){showToast('⚠️ Error al enviar','error');return;}
+  await loadChatMessages();
+}
+
+async function showNuevoMensaje(){
+  const {data:trainers}=await supa.from('profiles').select('*').eq('role','entrenador');
+  if(!trainers||!trainers.length){showToast('No hay entrenadores disponibles');return;}
+  openChat(trainers[0].email,trainers[0].full_name||trainers[0].email);
 }
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
