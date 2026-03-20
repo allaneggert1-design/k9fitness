@@ -140,6 +140,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 .serie-dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'Barlow Condensed',sans-serif;flex-shrink:0}
 .serie-dot.done{background:var(--green);border-color:var(--green);color:#fff}
 .serie-dot.active{border-color:var(--green-light);color:var(--green-light)}
+@keyframes bounce{from{transform:scale(1)}to{transform:scale(1.2)}}
+@keyframes prPop{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 </style>
 </head>
 <body>
@@ -484,6 +486,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
       </div>
     </div>
     <div class="section">
+      <div class="sec-title">🏆 Récords personales</div>
+      <div id="prs-list"><div class="lib-loading" style="padding:20px"><div class="lib-spinner"></div></div></div>
+    </div>
+    <div class="section">
       <div class="sec-title">Registrar nuevas medidas</div>
       <div style="background:var(--card);border-radius:16px;padding:18px;border:1px solid var(--border)">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
@@ -772,25 +778,37 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
   document.getElementById('entrenar-sub').textContent=rutinas.length+' ejercicios · ~'+rutinas.length*10+' minutos';
   const icons=['🏋️','💪','🤸','🦾','⚡','🎯','🔱','🏹','⚓','🦵'];
   document.getElementById('ejercicios-hoy').innerHTML=rutinas.map((r,i)=>{
-    const descansoSeg = parseDescanso(r.descanso||'60s');
-    const series = parseInt(r.series)||3;
-    const dots = Array.from({length:series},(_,s)=>`<div class="serie-dot" id="dot-${i}-${s}" onclick="markSerie(${i},${s},${series},${descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${(r.descanso||'60s').replace(/'/g,"\\'")}')"><span>${s+1}</span></div>`).join('');
+    const descansoSeg=parseDescanso(r.descanso||'60s');
+    const series=parseInt(r.series)||3;
+    const dots=Array.from({length:series},(_,s)=>`<div class="serie-dot" id="dot-${i}-${s}" onclick="markSerie(${i},${s},${series},${descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${(r.descanso||'60s').replace(/'/g,"\\'")}')"><span>${s+1}</span></div>`).join('');
     return `
-    <div class="ex-card" style="flex-direction:column;align-items:stretch;padding:14px">
+    <div class="ex-card" style="flex-direction:column;align-items:stretch;padding:14px" id="excard-${i}">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
         <div class="ex-thumb" style="border-radius:12px;flex-shrink:0">${icons[i%icons.length]}</div>
         <div style="flex:1">
-          <div class="ex-name">${r.ejercicio_nombre||'Ejercicio'}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="ex-name">${r.ejercicio_nombre||'Ejercicio'}</div>
+            <div id="pr-badge-${i}" style="display:none;background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;font-family:'Barlow Condensed',sans-serif">🏆 PR</div>
+          </div>
           <div class="ex-badges">
             <div class="ex-badge">Series: <b>${r.series||'—'}</b></div>
             <div class="ex-badge">Reps: <b>${r.reps||'—'}</b></div>
             <div class="ex-badge">Desc: <b>${r.descanso||'—'}</b></div>
-            ${r.peso_kg?`<div class="ex-badge">Peso: <b>${r.peso_kg}kg</b></div>`:''}
+            <div class="ex-badge" id="pr-prev-${i}" style="color:var(--muted2)">PR: cargando...</div>
           </div>
           ${r.observaciones?`<div style="font-size:11px;color:var(--green-light);margin-top:6px">💬 ${r.observaciones}</div>`:''}
         </div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Peso utilizado</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+            <button onclick="adjustWeight(${i},-2.5)" style="width:28px;height:28px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+            <input type="number" id="weight-${i}" value="${r.peso_kg||''}" placeholder="${r.peso_kg||'kg'}" step="2.5" style="width:70px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px;font-size:15px;font-weight:700;color:var(--text);font-family:'Barlow Condensed',sans-serif" oninput="checkPRLive(${i},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}')">
+            <button onclick="adjustWeight(${i},2.5)" style="width:28px;height:28px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+            <span style="font-size:13px;color:var(--muted)">kg</span>
+          </div>
+        </div>
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">Marcar series completadas</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${dots}
@@ -799,6 +817,9 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
       </div>
     </div>`;
   }).join('');
+
+  // Load PRs for all exercises
+  rutinas.forEach((r,i)=>loadPRForExercise(i, r.ejercicio_nombre||''));
 }
 
 function loadMedidas(p){
@@ -1028,7 +1049,7 @@ function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
   const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones'};
   goScreen(m[tab]);
-  if(tab==='progreso') setTimeout(()=>loadProgresoChart(),100);
+  if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();},100);
   if(tab==='perfil') loadPerfil();
   if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
   if(tab==='notificaciones') loadNotificaciones();
@@ -1263,7 +1284,107 @@ function stopTimer(){
   document.getElementById('timer-overlay').classList.remove('show');
 }
 
-function markSerie(exIdx, serieIdx, totalSeries, descansoSeg, exName, descansoStr){
+async function loadPRsList(){
+  if(!currentUser)return;
+  const el=document.getElementById('prs-list');
+  if(!el)return;
+  const {data}=await supa.from('records_personales').select('*').eq('alumno_email',currentUser.email).order('peso_kg',{ascending:false});
+  if(!data||!data.length){
+    el.innerHTML='<div class="empty-state" style="padding:16px 0">Aún no tienes récords. ¡Completa tu primer ejercicio con peso!</div>';
+    return;
+  }
+  // Group by exercise, keep best
+  const best={};
+  data.forEach(r=>{if(!best[r.ejercicio]||r.peso_kg>best[r.ejercicio].peso_kg)best[r.ejercicio]=r;});
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">
+    ${Object.values(best).sort((a,b)=>b.peso_kg-a.peso_kg).map(r=>`
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
+        <div style="font-size:24px">🏆</div>
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase">${r.ejercicio}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${new Date(r.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#f39c12">${r.peso_kg}kg</div>
+          ${r.reps?`<div style="font-size:11px;color:var(--muted)">${r.reps} reps</div>`:''}
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ─── RECORDS PERSONALES (PRs) ─────────────────────────────────────────────────
+const prCache={};
+
+async function loadPRForExercise(idx, ejercicio){
+  if(!currentUser||!ejercicio)return;
+  const {data}=await supa.from('records_personales').select('peso_kg,reps,fecha').eq('alumno_email',currentUser.email).eq('ejercicio',ejercicio).order('peso_kg',{ascending:false}).limit(1);
+  const prEl=document.getElementById('pr-prev-'+idx);
+  if(data&&data.length>0){
+    const pr=data[0];
+    prCache[ejercicio]=pr.peso_kg;
+    if(prEl) prEl.innerHTML=`PR: <b style="color:var(--text)">${pr.peso_kg}kg</b>`;
+    // Check if current weight already beats it
+    const weightEl=document.getElementById('weight-'+idx);
+    if(weightEl&&parseFloat(weightEl.value)>pr.peso_kg) showPRBadge(idx);
+  } else {
+    prCache[ejercicio]=0;
+    if(prEl) prEl.innerHTML=`PR: <b style="color:var(--muted2)">—</b>`;
+  }
+}
+
+function checkPRLive(idx, ejercicio){
+  const weightEl=document.getElementById('weight-'+idx);
+  if(!weightEl)return;
+  const val=parseFloat(weightEl.value)||0;
+  const prev=prCache[ejercicio]||0;
+  if(val>prev&&val>0) showPRBadge(idx);
+  else hidePRBadge(idx);
+}
+
+function showPRBadge(idx){
+  const badge=document.getElementById('pr-badge-'+idx);
+  if(badge) badge.style.display='inline-block';
+}
+
+function hidePRBadge(idx){
+  const badge=document.getElementById('pr-badge-'+idx);
+  if(badge) badge.style.display='none';
+}
+
+function adjustWeight(idx, delta){
+  const el=document.getElementById('weight-'+idx);
+  if(!el)return;
+  const curr=parseFloat(el.value)||0;
+  el.value=Math.max(0,(curr+delta)).toFixed(1).replace('.0','');
+  el.dispatchEvent(new Event('input'));
+}
+
+async function savePR(ejercicio, pesoKg, reps){
+  if(!currentUser||!ejercicio||!pesoKg)return;
+  const prev=prCache[ejercicio]||0;
+  if(pesoKg<=prev)return; // Not a PR
+  await supa.from('records_personales').insert({alumno_email:currentUser.email,ejercicio,peso_kg:pesoKg,reps,fecha:new Date().toISOString().split('T')[0]});
+  prCache[ejercicio]=pesoKg;
+  // Celebración!
+  showPRCelebration(ejercicio, pesoKg);
+}
+
+function showPRCelebration(ejercicio, pesoKg){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:fadeIn .3s ease';
+  overlay.innerHTML=`
+    <div style="font-size:80px;animation:bounce 0.6s infinite alternate">🏆</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;text-transform:uppercase;color:#f39c12;text-align:center;letter-spacing:2px">¡Nuevo récord!</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:#fff;text-align:center">${ejercicio}</div>
+    <div style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;padding:12px 32px;border-radius:20px">${pesoKg} kg</div>
+    <div style="font-size:14px;color:var(--muted);text-align:center">¡Superaste tu mejor marca personal!</div>
+    <button onclick="this.parentElement.remove()" style="margin-top:8px;background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px 40px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">¡Continuar! 💪</button>`;
+  document.body.appendChild(overlay);
+  if(navigator.vibrate)navigator.vibrate([100,50,100,50,300]);
+  setTimeout(()=>{if(overlay.parentElement)overlay.remove();},8000);
+}
+
+function markSerie(exIdx,serieIdx,totalSeries,descansoSeg,exName,descansoStr){
   const dot=document.getElementById(`dot-${exIdx}-${serieIdx}`);
   if(!dot)return;
   const isDone=dot.classList.contains('done');
@@ -1272,6 +1393,10 @@ function markSerie(exIdx, serieIdx, totalSeries, descansoSeg, exName, descansoSt
   // Check if all series done
   const allDone=Array.from({length:totalSeries},(_,s)=>document.getElementById(`dot-${exIdx}-${s}`)?.classList.contains('done')).every(Boolean);
   if(allDone){
+    // Save PR if weight was entered
+    const weightEl=document.getElementById('weight-'+exIdx);
+    const peso=parseFloat(weightEl?.value)||0;
+    if(peso>0) savePR(exName, peso, parseInt(document.querySelector(`#excard-${exIdx} .ex-badge b`)?.textContent)||null);
     showToast('🎯 ¡Ejercicio completado!');
     return;
   }
