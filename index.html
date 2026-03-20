@@ -228,7 +228,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
     <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
-    <div class="nav-item" onclick="navTo('mensajes')"><div class="nav-icon">💬</div><div class="nav-label">Mensajes</div></div>
+    <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
 </div>
 
@@ -248,7 +248,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="nav-item active" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
     <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
-    <div class="nav-item" onclick="navTo('mensajes')"><div class="nav-icon">💬</div><div class="nav-label">Mensajes</div></div>
+    <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
 </div>
 
@@ -293,7 +293,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
     <div class="nav-item active" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
-    <div class="nav-item" onclick="navTo('mensajes')"><div class="nav-icon">💬</div><div class="nav-label">Mensajes</div></div>
+    <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
 </div>
 
@@ -369,7 +369,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
     <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item active" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
-    <div class="nav-item" onclick="navTo('mensajes')"><div class="nav-icon">💬</div><div class="nav-label">Mensajes</div></div>
+    <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
 </div>
 
@@ -393,7 +393,83 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
     <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
-    <div class="nav-item active" onclick="navTo('mensajes')"><div class="nav-icon">💬</div><div class="nav-label">Mensajes</div></div>
+    <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
+  </div>
+</div>
+
+<!-- PERFIL -->
+<div class="screen" id="s-perfil">
+  <div style="background:var(--surface);padding:52px 20px 0;flex-shrink:0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;flex-direction:column;align-items:center;padding-bottom:24px">
+      <div id="perfil-avatar" style="width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:#fff;margin-bottom:14px;border:3px solid var(--green)">?</div>
+      <div id="perfil-name" style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">—</div>
+      <div id="perfil-email" style="font-size:13px;color:var(--muted);margin-bottom:10px">—</div>
+      <div style="display:flex;gap:8px">
+        <div id="perfil-role-badge" style="background:var(--green-glow);color:var(--green-light);font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;border:1px solid rgba(91,168,50,.2)">Alumno</div>
+        <div id="perfil-plan-badge" style="background:var(--card2);color:var(--muted);font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;border:1px solid var(--border)">Básico</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:20px 20px 0">
+      <div class="sec-title">Mi información</div>
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:20px">👤</div>
+          <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px">Nombre</div><div id="perfil-name2" style="font-size:15px;font-weight:500">—</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:20px">📧</div>
+          <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px">Email</div><div id="perfil-email2" style="font-size:15px;font-weight:500">—</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:20px">🏅</div>
+          <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px">Plan</div><div id="perfil-plan2" style="font-size:15px;font-weight:500">—</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px">
+          <div style="font-size:20px">📅</div>
+          <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px">Miembro desde</div><div id="perfil-since" style="font-size:15px;font-weight:500">—</div></div>
+        </div>
+      </div>
+
+      <div class="sec-title">Estadísticas</div>
+      <div class="stat-row" style="padding:0;margin-bottom:20px">
+        <div class="stat"><div class="stat-n" id="perfil-stat1">0</div><div class="stat-l">Semanas</div></div>
+        <div class="stat"><div class="stat-n" id="perfil-stat2">0</div><div class="stat-l">Registros</div></div>
+        <div class="stat"><div class="stat-n" id="perfil-stat3">—</div><div class="stat-l">Peso actual</div></div>
+      </div>
+
+      <div class="sec-title">Cuenta</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <button onclick="showToast('Función disponible próximamente 🔔')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+          <span style="font-size:20px">🔔</span>
+          <span style="font-size:14px;font-weight:500;color:var(--text)">Notificaciones</span>
+          <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+        </button>
+        <button onclick="showToast('Función disponible próximamente 🔒')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+          <span style="font-size:20px">🔒</span>
+          <span style="font-size:14px;font-weight:500;color:var(--text)">Cambiar contraseña</span>
+          <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+        </button>
+        <button onclick="confirmLogout()" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid rgba(192,57,43,.3);border-radius:14px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+          <span style="font-size:20px">🚪</span>
+          <span style="font-size:14px;font-weight:500;color:#e74c3c">Cerrar sesión</span>
+          <span style="margin-left:auto;color:var(--muted);font-size:18px">›</span>
+        </button>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:var(--muted2);margin-bottom:20px">
+        K9 Fitness Academia · v1.0<br>
+        <span style="color:var(--green-dark)">k9fitness.pp.ua</span>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
+    <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
+    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
+    <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
+    <div class="nav-item active" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
 </div>
 
@@ -772,9 +848,46 @@ function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classLis
 function goBack(to){goScreen(to);}
 function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
-  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes'};
+  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil'};
   goScreen(m[tab]);
   if(tab==='progreso') setTimeout(()=>loadProgresoChart(),100);
+  if(tab==='perfil') loadPerfil();
+}
+
+function loadPerfil(){
+  if(!currentUser||!currentProfile)return;
+  const name=currentProfile.full_name||'—';
+  const email=currentUser.email||'—';
+  const role=currentProfile.role==='entrenador'?'Entrenador':'Alumno';
+  const plan=(currentProfile.plan||'basico').charAt(0).toUpperCase()+(currentProfile.plan||'basico').slice(1);
+  const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
+  const created=currentProfile.created_at?new Date(currentProfile.created_at).toLocaleDateString('es-ES',{year:'numeric',month:'long',day:'numeric'}):'—';
+  const weeks=Math.max(0,Math.floor((Date.now()-new Date(currentProfile.created_at||Date.now()))/(7*24*60*60*1000)));
+
+  document.getElementById('perfil-avatar').textContent=initials;
+  document.getElementById('perfil-name').textContent=name;
+  document.getElementById('perfil-email').textContent=email;
+  document.getElementById('perfil-name2').textContent=name;
+  document.getElementById('perfil-email2').textContent=email;
+  document.getElementById('perfil-plan2').textContent=plan;
+  document.getElementById('perfil-since').textContent=created;
+  document.getElementById('perfil-role-badge').textContent=role;
+  document.getElementById('perfil-plan-badge').textContent=plan;
+  document.getElementById('perfil-stat1').textContent=weeks;
+
+  // Load stats from DB
+  supa.from('progreso').select('*',{count:'exact',head:true}).eq('alumno_email',currentUser.email).then(({count})=>{
+    document.getElementById('perfil-stat2').textContent=count||0;
+  });
+  supa.from('progreso').select('peso_kg').eq('alumno_email',currentUser.email).order('fecha',{ascending:false}).limit(1).then(({data})=>{
+    document.getElementById('perfil-stat3').textContent=data&&data[0]?.peso_kg?(data[0].peso_kg+'kg'):'—';
+  });
+}
+
+function confirmLogout(){
+  if(confirm('¿Seguro que quieres cerrar sesión?')){
+    supaLogout();
+  }
 }
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
