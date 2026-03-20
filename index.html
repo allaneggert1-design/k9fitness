@@ -486,6 +486,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
       </div>
     </div>
     <div class="section">
+      <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+        Historial de entrenamientos
+        <button onclick="navTo('historial')" style="background:none;border:none;color:var(--green-light);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600">Ver todo →</button>
+      </div>
+      <div id="historial-preview"></div>
+    </div>
+    <div class="section">
       <div class="sec-title">🏆 Récords personales</div>
       <div id="prs-list"><div class="lib-loading" style="padding:20px"><div class="lib-spinner"></div></div></div>
     </div>
@@ -651,6 +658,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="scroll">
     <div id="notif-list">
       <div class="lib-loading"><div class="lib-spinner"></div><span>Cargando...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORIAL -->
+<div class="screen" id="s-historial">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-progreso')">←</div>
+      <h1>📅 <span>Historial</span></h1>
+      <div id="historial-total" style="font-size:12px;color:var(--muted)"></div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:12px 20px 0" id="historial-full">
+      <div class="lib-loading"><div class="lib-spinner"></div><span>Cargando historial...</span></div>
     </div>
   </div>
 </div>
@@ -1056,12 +1079,13 @@ function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classLis
 function goBack(to){goScreen(to);}
 function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
-  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones'};
+  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial'};
   goScreen(m[tab]);
-  if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();},100);
+  if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();},100);
   if(tab==='perfil') loadPerfil();
   if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
   if(tab==='notificaciones') loadNotificaciones();
+  if(tab==='historial') loadHistorialFull();
 }
 
 function loadPerfil(){
@@ -1627,6 +1651,64 @@ async function enviarMensaje(email, nombre){
   showToast('✓ Mensaje enviado a '+nombre);
 }
 
+// ─── HISTORIAL DE ENTRENAMIENTOS ─────────────────────────────────────────────
+function renderHistorialCard(h){
+  const fecha=new Date(h.fecha).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+  const pct=h.ejercicios_completados?Math.min(100,h.ejercicios_completados*10):100;
+  return `<div style="background:var(--card);border-radius:16px;padding:16px;border:1px solid var(--border);margin-bottom:10px;position:relative;overflow:hidden">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green);border-radius:2px"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;line-height:1.1">${h.nombre_rutina||'Entrenamiento'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${fecha}</div>
+      </div>
+      <div style="background:${pct>=80?'var(--green-glow)':'var(--card2)'};border:1px solid ${pct>=80?'rgba(91,168,50,.3)':'var(--border)'};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:${pct>=80?'var(--green-light)':'var(--muted)'}">${pct}%</div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      ${h.duracion_min?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)"><span>⏱️</span>${h.duracion_min} min</div>`:''}
+      ${h.kcal_quemadas?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)"><span>🔥</span>${h.kcal_quemadas} kcal</div>`:''}
+      ${h.volumen_total_kg?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)"><span>🏋️</span>${h.volumen_total_kg} kg vol.</div>`:''}
+      ${h.frecuencia_cardiaca_max?`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)"><span>❤️</span>${h.frecuencia_cardiaca_max} bpm</div>`:''}
+    </div>
+  </div>`;
+}
+
+async function loadHistorialPreview(){
+  if(!currentUser)return;
+  const el=document.getElementById('historial-preview');
+  if(!el)return;
+  const {data}=await supa.from('historial_entrenamientos').select('*').eq('alumno_email',currentUser.email).order('fecha',{ascending:false}).limit(3);
+  if(!data||!data.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0">Completa tu primer entrenamiento para ver el historial.</div>';
+    return;
+  }
+  el.innerHTML=data.map(renderHistorialCard).join('');
+}
+
+async function loadHistorialFull(){
+  if(!currentUser)return;
+  const el=document.getElementById('historial-full');
+  const totalEl=document.getElementById('historial-total');
+  if(!el)return;
+  const {data,count}=await supa.from('historial_entrenamientos').select('*',{count:'exact'}).eq('alumno_email',currentUser.email).order('fecha',{ascending:false});
+  if(totalEl)totalEl.textContent=(count||0)+' sesiones';
+  if(!data||!data.length){
+    el.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">📅</div>No hay entrenamientos registrados aún.<br>Completa tu primera sesión.</div>';
+    return;
+  }
+  // Group by month
+  const byMonth={};
+  data.forEach(h=>{
+    const key=new Date(h.fecha).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+    if(!byMonth[key])byMonth[key]=[];
+    byMonth[key].push(h);
+  });
+  el.innerHTML=Object.entries(byMonth).map(([month,items])=>`
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin:16px 0 10px">${month}</div>
+    ${items.map(renderHistorialCard).join('')}
+  `).join('');
+}
+
 // ─── WORKOUT SESSION + SMARTWATCH ────────────────────────────────────────────
 let sessionInterval=null;
 let sessionSeconds=0;
@@ -1658,18 +1740,97 @@ function startWorkoutSession(){
   showToast('✓ ¡Entrenamiento iniciado! 💪');
 }
 
-function stopWorkoutSession(){
+async function stopWorkoutSession(){
   if(sessionInterval){clearInterval(sessionInterval);sessionInterval=null;}
   document.getElementById('session-bar').style.display='none';
   document.querySelector('.start-btn').style.display='flex';
   if(bleDevice&&bleDevice.gatt.connected) bleDevice.gatt.disconnect();
   watchConnected=false;
-  if(sessionSeconds>60){
-    const mins=Math.floor(sessionSeconds/60);
-    showToast(`✓ ¡Sesión completada! ${mins} min · ${sessionKcal} kcal 🔥`);
-  } else {
-    showToast('Entrenamiento finalizado');
+
+  if(sessionSeconds<30){showToast('Entrenamiento finalizado');return;}
+
+  const mins=Math.floor(sessionSeconds/60);
+
+  // Count completed exercises
+  const completedDots=document.querySelectorAll('.serie-dot.done').length;
+  const totalDots=document.querySelectorAll('.serie-dot').length;
+
+  // Calculate total volume
+  let volumenTotal=0;
+  document.querySelectorAll('[id^="weight-"]').forEach((el,i)=>{
+    const peso=parseFloat(el.value)||0;
+    const seriesDone=document.querySelectorAll(`[id^="dot-${i}-"].done`).length;
+    const repsEl=document.querySelector(`#excard-${i} .ex-badge:nth-child(2) b`);
+    const reps=parseInt(repsEl?.textContent)||10;
+    volumenTotal+=peso*seriesDone*reps;
+  });
+
+  // Get rutina name
+  const rutinaNombre=document.getElementById('entrenar-badge')?.textContent||'Entrenamiento';
+
+  // Save to history
+  if(currentUser){
+    await supa.from('historial_entrenamientos').insert({
+      alumno_email:currentUser.email,
+      nombre_rutina:rutinaNombre,
+      duracion_min:mins,
+      ejercicios_completados:Math.round(completedDots/(totalDots/Math.max(1,document.querySelectorAll('[id^="excard-"]').length))),
+      volumen_total_kg:Math.round(volumenTotal),
+      kcal_quemadas:sessionKcal,
+      frecuencia_cardiaca_max:sessionHR||null,
+      fecha:new Date().toISOString().split('T')[0]
+    });
   }
+
+  // Show summary screen
+  showWorkoutSummary(mins, completedDots, totalDots, volumenTotal, sessionKcal, sessionHR, rutinaNombre);
+}
+
+function showWorkoutSummary(mins, doneDots, totalDots, volumen, kcal, hrMax, rutinaNombre){
+  const pct=totalDots>0?Math.round((doneDots/totalDots)*100):100;
+  const overlay=document.createElement('div');
+  overlay.id='workout-summary-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;overflow-y:auto';
+  overlay.innerHTML=`
+    <div style="background:var(--surface);padding:52px 20px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;color:var(--green-light);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">✓ Entrenamiento completado</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;line-height:1.1">${rutinaNombre}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div>
+    </div>
+    <div style="padding:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--green-light)">${mins}</div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Minutos</div>
+        </div>
+        <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#e74c3c">${kcal}</div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Calorías</div>
+        </div>
+        <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#f39c12">${Math.round(volumen)}</div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Vol. total kg</div>
+        </div>
+        <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--text)">${pct}%</div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Completado</div>
+        </div>
+      </div>
+      ${hrMax?`<div style="background:var(--card);border-radius:16px;padding:16px;text-align:center;border:1px solid var(--border);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px"><span style="font-size:24px">❤️</span><div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#e74c3c">${hrMax} bpm</div><div style="font-size:12px;color:var(--muted)">Frecuencia cardíaca máxima</div></div></div>`:''}
+      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:16px;text-align:center;margin-bottom:20px">
+        <div style="font-size:13px;color:var(--green-light);line-height:1.6">${getMotivationalMsg(pct, mins)}</div>
+      </div>
+      <button onclick="document.getElementById('workout-summary-overlay').remove()" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">¡Listo! 🏠</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  if(navigator.vibrate)navigator.vibrate([100,50,200]);
+}
+
+function getMotivationalMsg(pct, mins){
+  if(pct===100&&mins>=45)return '🔥 ¡Sesión perfecta! Completaste todo el entrenamiento. ¡Eres una máquina!';
+  if(pct>=80)return '💪 ¡Excelente trabajo! Casi lo completas todo. ¡Sigue así!';
+  if(pct>=50)return '✅ Buen esfuerzo. Cada sesión cuenta para tu progreso.';
+  return '🌱 ¡Empezar ya es un logro! La consistencia es la clave.';
 }
 
 async function connectSmartwatch(){
