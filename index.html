@@ -864,10 +864,19 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
     const descansoSeg=parseDescanso(r.descanso||'60s');
     const series=parseInt(r.series)||3;
     const dots=Array.from({length:series},(_,s)=>`<div class="serie-dot" id="dot-${i}-${s}" onclick="markSerie(${i},${s},${series},${descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${(r.descanso||'60s').replace(/'/g,"\\'")}')"><span>${s+1}</span></div>`).join('');
+
+    // Detect superset from observaciones
+    const obs=r.observaciones||'';
+    const ssMatch=obs.match(/\[SS(\d+)\]/);
+    const isSuperset=!!ssMatch;
+    const ssGroup=ssMatch?ssMatch[1]:null;
+    const cleanObs=obs.replace(/\[SS\d+\]\s*/,'');
+
     return `
-    <div class="ex-card" style="flex-direction:column;align-items:stretch;padding:14px" id="excard-${i}">
+    <div class="ex-card" style="flex-direction:column;align-items:stretch;padding:14px;${isSuperset?'border-color:rgba(243,156,18,.4);':''}margin-bottom:${isSuperset?'4':'8'}px" id="excard-${i}">
+      ${isSuperset?`<div style="font-size:10px;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px"><span>⚡</span> Supersérie ${ssGroup} — Sin descanso antes de este ejercicio</div>`:''}
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div class="ex-thumb" style="border-radius:12px;flex-shrink:0">${icons[i%icons.length]}</div>
+        <div class="ex-thumb" style="border-radius:12px;flex-shrink:0;${isSuperset?'background:linear-gradient(135deg,#2a1a00,#3d2800)':''}">${icons[i%icons.length]}</div>
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px">
             <div class="ex-name">${r.ejercicio_nombre||'Ejercicio'}</div>
@@ -879,7 +888,7 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
             <div class="ex-badge">Desc: <b>${r.descanso||'—'}</b></div>
             <div class="ex-badge" id="pr-prev-${i}" style="color:var(--muted2)">PR: cargando...</div>
           </div>
-          ${r.observaciones?`<div style="font-size:11px;color:var(--green-light);margin-top:6px">💬 ${r.observaciones}</div>`:''}
+          ${cleanObs?`<div style="font-size:11px;color:var(--green-light);margin-top:6px">💬 ${cleanObs}</div>`:''}
         </div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:12px">
@@ -904,7 +913,7 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">Marcar series completadas</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${dots}
-          <button onclick="startTimer(${descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${(r.descanso||'60s').replace(/'/g,"\\'")}' )" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap">⏱️ Timer</button>
+          <button onclick="startTimer(${isSuperset?0:descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${isSuperset?'Sin descanso':(r.descanso||'60s').replace(/'/g,"\\'")}' )" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap">${isSuperset?'⚡ SS':'⏱️ Timer'}</button>
         </div>
       </div>
     </div>`;
@@ -1613,17 +1622,26 @@ function openCrearRutina(email, nombre){
   goScreen('s-crear-rutina');
 }
 
-function addEjercicioForm(){
+function addEjercicioForm(supersetGroup=null){
   ejercicioCount++;
   const n=ejercicioCount;
+  const isSuperset=supersetGroup!==null;
   const div=document.createElement('div');
   div.id='ej-'+n;
-  div.style.cssText='background:var(--card);border-radius:14px;padding:16px;border:1px solid var(--border);margin-bottom:10px;position:relative';
+  div.dataset.supersetGroup=supersetGroup||'';
+  div.style.cssText=`background:var(--card);border-radius:14px;padding:16px;border:1px solid ${isSuperset?'rgba(243,156,18,.4)':'var(--border)'};margin-bottom:${isSuperset?'4':'10'}px;position:relative${isSuperset?';margin-left:12px':''}`;
   div.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;color:var(--green-light)">Ejercicio ${n}</div>
-      ${n>1?`<button onclick="document.getElementById('ej-${n}').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>`:''}
+      <div style="display:flex;align-items:center;gap:8px">
+        ${isSuperset?`<span style="background:rgba(243,156,18,.15);color:#f39c12;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid rgba(243,156,18,.3)">SS ${supersetGroup}</span>`:''}
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;color:${isSuperset?'#f39c12':'var(--green-light)'}">Ejercicio ${n}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${n>1?`<button onclick="addEjercicioForm(${supersetGroup!==null?supersetGroup:n})" style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);border-radius:8px;padding:4px 10px;color:#f39c12;font-size:11px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+SS</button>`:''}
+        ${n>1?`<button onclick="document.getElementById('ej-${n}').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>`:''}
+      </div>
     </div>
+    ${isSuperset?`<div style="font-size:11px;color:#f39c12;margin-bottom:10px;opacity:.7">⚡ Sin descanso antes de este ejercicio</div>`:''}
     <div style="display:grid;gap:10px">
       <input class="input-field" id="ej-${n}-nombre" placeholder="Nombre del ejercicio">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1631,7 +1649,7 @@ function addEjercicioForm(){
         <input class="input-field" id="ej-${n}-reps" placeholder="Reps (ej: 10)">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <input class="input-field" id="ej-${n}-descanso" placeholder="Descanso (ej: 60s)">
+        <input class="input-field" id="ej-${n}-descanso" placeholder="${isSuperset?'Desc. después del SS':'Descanso (ej: 60s)'}">
         <input class="input-field" id="ej-${n}-peso" type="number" placeholder="Peso kg">
       </div>
       <input class="input-field" id="ej-${n}-obs" placeholder="Observaciones (opcional)">
@@ -1651,6 +1669,8 @@ async function saveRutina(){
     if(!el)continue;
     const ejNombre=document.getElementById('ej-'+i+'-nombre')?.value.trim();
     if(!ejNombre)continue;
+    const ssGroup=el.dataset.supersetGroup||null;
+    const ssPrefix=ssGroup?`[SS${ssGroup}] `:'';
     rows.push({
       alumno_email:selectedAlumnoEmail,
       nombre_rutina:nombre,
@@ -1660,7 +1680,7 @@ async function saveRutina(){
       reps:document.getElementById('ej-'+i+'-reps')?.value||null,
       descanso:document.getElementById('ej-'+i+'-descanso')?.value||null,
       peso_kg:parseFloat(document.getElementById('ej-'+i+'-peso')?.value)||null,
-      observaciones:document.getElementById('ej-'+i+'-obs')?.value||nota||null,
+      observaciones:ssPrefix+(document.getElementById('ej-'+i+'-obs')?.value||nota||''),
       orden:i
     });
   }
@@ -1669,6 +1689,15 @@ async function saveRutina(){
   if(error){showToast('⚠️ Error: '+error.message,'error');return;}
   showToast('✓ Rutina "'+nombre+'" guardada para '+rows.length+' ejercicios');
   goScreen('s-entrenador');
+}
+
+function addCircuitGroup(){
+  // Add 2 exercises with same superset group
+  const groupId=ejercicioCount+1;
+  // Show info toast
+  showToast('⚡ Supersérie — agrega 2+ ejercicios sin descanso entre ellos');
+  addEjercicioForm(groupId);
+  addEjercicioForm(groupId);
 }
 
 async function verRutinas(email,nombre){
@@ -2204,7 +2233,8 @@ init();
       </div>
       <div class="sec-title" style="margin-bottom:12px">Ejercicios</div>
       <div id="ejercicios-form"></div>
-      <button id="btn-add-ej" onclick="addEjercicioForm()" style="width:100%;background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:14px;color:var(--muted);font-size:14px;cursor:pointer;margin-bottom:16px;font-family:'Barlow',sans-serif">+ Agregar ejercicio</button>
+      <button id="btn-add-ej" onclick="addEjercicioForm()" style="width:100%;background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:14px;color:var(--muted);font-size:14px;cursor:pointer;margin-bottom:8px;font-family:'Barlow',sans-serif">+ Agregar ejercicio</button>
+      <button onclick="addCircuitGroup()" style="width:100%;background:rgba(243,156,18,.06);border:1px dashed rgba(243,156,18,.4);border-radius:14px;padding:12px;color:#f39c12;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px;font-family:'Barlow',sans-serif">⚡ Agregar supersérie / circuito</button>
       <div class="input-group"><label class="input-label">Nota general para el alumno</label><textarea class="input-field" id="r-nota" rows="3" placeholder="Consejos, motivación..." style="resize:none"></textarea></div>
       <button class="btn-green" id="btn-save-rutina" onclick="saveRutina()">💾 Guardar rutina</button>
       <div style="height:30px"></div>
