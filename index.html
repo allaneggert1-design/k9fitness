@@ -809,6 +809,15 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
             <span style="font-size:13px;color:var(--muted)">kg</span>
           </div>
         </div>
+        <div id="sugg-${i}" style="display:none;align-items:center;gap:8px;background:rgba(91,168,50,0.08);border:1px solid rgba(91,168,50,0.2);border-radius:10px;padding:8px 12px;margin-bottom:10px;cursor:pointer" onclick="applysuggestion(${i})">
+          <span style="font-size:16px">🤖</span>
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:1px">Sugerencia IA</div>
+            <div style="font-size:12px;color:var(--green-light)" class="sugg-reason">—</div>
+          </div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--green-light)" class="sugg-val">—</div>
+          <div style="font-size:11px;color:var(--muted)">→ usar</div>
+        </div>
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">Marcar series completadas</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${dots}
@@ -1317,22 +1326,89 @@ const prCache={};
 
 async function loadPRForExercise(idx, ejercicio){
   if(!currentUser||!ejercicio)return;
-  const {data}=await supa.from('records_personales').select('peso_kg,reps,fecha').eq('alumno_email',currentUser.email).eq('ejercicio',ejercicio).order('peso_kg',{ascending:false}).limit(1);
+
+  // Get last 3 sessions for this exercise to calculate progression
+  const {data}=await supa.from('records_personales').select('peso_kg,reps,fecha').eq('alumno_email',currentUser.email).eq('ejercicio',ejercicio).order('fecha',{ascending:false}).limit(3);
+
   const prEl=document.getElementById('pr-prev-'+idx);
+  const weightEl=document.getElementById('weight-'+idx);
+
   if(data&&data.length>0){
-    const pr=data[0];
-    prCache[ejercicio]=pr.peso_kg;
-    if(prEl) prEl.innerHTML=`PR: <b style="color:var(--text)">${pr.peso_kg}kg</b>`;
-    // Check if current weight already beats it
-    const weightEl=document.getElementById('weight-'+idx);
-    if(weightEl&&parseFloat(weightEl.value)>pr.peso_kg) showPRBadge(idx);
+    const bestPR=Math.max(...data.map(d=>d.peso_kg));
+    prCache[ejercicio]=bestPR;
+
+    // Calculate suggested weight using progressive overload
+    const suggestion=calculateProgression(data);
+
+    if(prEl) prEl.innerHTML=`PR: <b style="color:var(--text)">${bestPR}kg</b>`;
+
+    // Show suggestion chip below the weight input
+    const suggEl=document.getElementById('sugg-'+idx);
+    if(suggEl&&suggestion){
+      suggEl.style.display='flex';
+      suggEl.querySelector('.sugg-val').textContent=suggestion.peso+'kg';
+      suggEl.querySelector('.sugg-reason').textContent=suggestion.razon;
+    }
+
+    // Auto-fill weight input with suggestion
+    if(weightEl&&!weightEl.value&&suggestion){
+      weightEl.value=suggestion.peso;
+    }
   } else {
     prCache[ejercicio]=0;
     if(prEl) prEl.innerHTML=`PR: <b style="color:var(--muted2)">—</b>`;
   }
 }
 
-function checkPRLive(idx, ejercicio){
+function calculateProgression(records){
+  if(!records||!records.length)return null;
+
+  const last=records[0]; // most recent
+  const lastPeso=parseFloat(last.peso_kg)||0;
+  if(!lastPeso)return null;
+
+  // If only 1 record — suggest same weight
+  if(records.length===1){
+    return{peso:lastPeso,razon:'Mismo peso que la última sesión'};
+  }
+
+  const prev=records[1];
+  const prevPeso=parseFloat(prev.peso_kg)||0;
+
+  // If increased last session — maintain for consolidation or increase again
+  if(lastPeso>prevPeso){
+    const daysSince=Math.floor((new Date(last.fecha)-new Date(prev.fecha))/(86400000));
+    if(daysSince<=7){
+      // Recent increase — consolidate at same weight
+      return{peso:lastPeso,razon:'Consolida el peso de la semana pasada'};
+    }else{
+      // Time to increase
+      const increase=lastPeso>=100?5:lastPeso>=60?2.5:1.25;
+      return{peso:lastPeso+increase,razon:`+${increase}kg — progresión sugerida 📈`};
+    }
+  }
+
+  // Same weight multiple sessions — time to increase
+  if(lastPeso===prevPeso){
+    const increase=lastPeso>=100?5:lastPeso>=60?2.5:1.25;
+    return{peso:lastPeso+increase,razon:`+${increase}kg — superación progresiva 💪`};
+  }
+
+  // Decreased — suggest previous best
+  return{peso:Math.max(...records.map(r=>r.peso_kg)),razon:'Vuelve a tu mejor marca'};
+}
+
+function applysuggestion(idx){
+  const suggEl=document.getElementById('sugg-'+idx);
+  const weightEl=document.getElementById('weight-'+idx);
+  if(!suggEl||!weightEl)return;
+  const val=suggEl.querySelector('.sugg-val').textContent.replace('kg','');
+  weightEl.value=val;
+  weightEl.dispatchEvent(new Event('input'));
+  showToast('✓ Peso sugerido aplicado: '+val+'kg');
+}
+
+function checkPRLive(idx,ejercicio){
   const weightEl=document.getElementById('weight-'+idx);
   if(!weightEl)return;
   const val=parseFloat(weightEl.value)||0;
