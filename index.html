@@ -973,7 +973,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
       </div>
       <!-- Day headers -->
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px">
-        ${['L','M','X','J','V','S','D'].map(d=>`<div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">${d}</div>`).join('')}
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">L</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">M</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">X</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">J</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">V</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">S</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0">D</div>
       </div>
       <!-- Calendar grid -->
       <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:20px"></div>
@@ -1377,8 +1383,6 @@ async function assignProgramToAlumno(alumnoEmail, alumnoNombre){
     nombre_programa:'Programa K9 Fitness — Transformación Completa',
     fase_actual:1,total_fases:4,semanas_por_fase:4,semana_actual:1,activo:true
   });
-  showToast(`✓ Programa asignado a ${alumnoNombre}`);
-}
   showToast(`✓ Programa asignado a ${alumnoNombre}`);
 }
 
