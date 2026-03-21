@@ -1173,16 +1173,25 @@ const MUSCLE_GROUP_MAP={chest:['chest'],back:['lats','middle back','lower back',
 
 async function init(){
   loadSavedTemplateEdits();
-  // PRIMARY: use onAuthStateChange which catches INITIAL_SESSION on page reload
-  supa.auth.onAuthStateChange(async (event, session)=>{
-    console.log('Auth event:', event, !!session);
-    if((event==='INITIAL_SESSION'||event==='SIGNED_IN')&&session){
-      if(!currentUser){
-        currentUser=session.user;
-        await loadProfile();
-        goScreen('s-inicio');
-        afterLogin();
-      }
+  // Step 1: Try to restore session immediately from localStorage
+  try{
+    const {data:{session},error}=await supa.auth.getSession();
+    if(session&&!error){
+      currentUser=session.user;
+      await loadProfile();
+      goScreen('s-inicio');
+      afterLogin();
+      return; // Session restored successfully
+    }
+  }catch(e){console.warn('getSession error:',e);}
+
+  // Step 2: If no session, listen for auth changes
+  supa.auth.onAuthStateChange(async(event,session)=>{
+    if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&session&&!currentUser){
+      currentUser=session.user;
+      await loadProfile();
+      goScreen('s-inicio');
+      afterLogin();
     }
     if(event==='SIGNED_OUT'){
       currentUser=null;currentProfile=null;
@@ -1317,7 +1326,7 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px">
             <div class="ex-name">${r.ejercicio_nombre||'Ejercicio'}</div>
-            <div id="pr-badge-${i}" style="display:none;background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;font-family:'Barlow Condensed',sans-serif">🏆 PR</div>
+            <div id="pr-badge-${i}" style="display:none;background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;font-family:Barlow Condensed,sans-serif">🏆 PR</div>
           </div>
           <div class="ex-badges">
             <div class="ex-badge">Series: <b>${r.series||'—'}</b></div>
@@ -1333,7 +1342,7 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Peso utilizado</div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
             <button onclick="adjustWeight(${i},-2.5)" style="width:28px;height:28px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-            <input type="number" id="weight-${i}" value="${r.peso_kg||''}" placeholder="${r.peso_kg||'kg'}" step="2.5" style="width:70px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px;font-size:15px;font-weight:700;color:var(--text);font-family:'Barlow Condensed',sans-serif" oninput="checkPRLive(${i},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}')">
+            <input type="number" id="weight-${i}" value="${r.peso_kg||''}" placeholder="${r.peso_kg||'kg'}" step="2.5" style="width:70px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px;font-size:15px;font-weight:700;color:var(--text);font-family:Barlow Condensed,sans-serif" oninput="checkPRLive(${i},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}')">
             <button onclick="adjustWeight(${i},2.5)" style="width:28px;height:28px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
             <span style="font-size:13px;color:var(--muted)">kg</span>
           </div>
@@ -1344,13 +1353,13 @@ function loadEjerciciosHoy(rutinas,rNombre,today){
             <div style="font-size:11px;color:var(--muted);margin-bottom:1px">Sugerencia IA</div>
             <div style="font-size:12px;color:var(--green-light)" class="sugg-reason">—</div>
           </div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--green-light)" class="sugg-val">—</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:900;color:var(--green-light)" class="sugg-val">—</div>
           <div style="font-size:11px;color:var(--muted)">→ usar</div>
         </div>
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">Marcar series completadas</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${dots}
-          <button onclick="startTimer(${isSuperset?0:descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${isSuperset?'Sin descanso':(r.descanso||'60s').replace(/'/g,"\\'")}' )" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap">${isSuperset?'⚡ SS':'⏱️ Timer'}</button>
+          <button onclick="startTimer(${isSuperset?0:descansoSeg},'${(r.ejercicio_nombre||'').replace(/'/g,"\\'")}','${isSuperset?'Sin descanso':(r.descanso||'60s').replace(/'/g,"\\'")}' )" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:Barlow,sans-serif;white-space:nowrap">${isSuperset?'⚡ SS':'⏱️ Timer'}</button>
         </div>
       </div>
     </div>`;
@@ -1547,102 +1556,75 @@ const FASES_DEFAULT=[
   {numero:4,nombre:'Fase 4 — Peak/Definición',objetivo:'Mostrar los resultados del trabajo',descripcion:'Cargas altas con superávit reducido, cardio añadido, 5 días/semana. Consolidar fuerza y masa muscular ganadas.',color:'#9b59b6',icono:'🔥',semanas:4},
 ];
 
+function buildFaseCard(f,faseActual,semanaActual,semanasPorFase,totalFases,progId){
+  const isActual=f.numero===faseActual;
+  const isCompletada=f.numero<faseActual;
+  const pct=Math.round((semanaActual/semanasPorFase)*100);
+  let btns='';
+  if(isActual){
+    if(semanaActual<semanasPorFase) btns='<button onclick="avanzarSemana(\''+progId+'\','+semanaActual+','+semanasPorFase+','+faseActual+','+totalFases+')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Completar semana &rarr;</button>';
+    else if(faseActual<totalFases) btns='<button onclick="avanzarFase(\''+progId+'\','+faseActual+','+totalFases+')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Completar fase '+faseActual+'</button>';
+    else btns='<div style="font-size:12px;color:#2ecc71;font-weight:700">&#127942; Completado!</div>';
+  }
+  return '<div style="background:'+(isActual?'rgba(91,168,50,0.08)':'var(--card)')+';border-radius:16px;padding:18px;border:'+(isActual?'2px solid var(--green)':'1px solid var(--border)')+(f.numero>faseActual?';opacity:.5':'')+';position:relative;overflow:hidden">'
+    +(isActual?'<div style="position:absolute;top:0;right:0;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 16px 0 10px">ACTIVA</div>':'')
+    +(isCompletada?'<div style="color:#2ecc71;font-size:11px;font-weight:700;margin-bottom:8px">&#10003; COMPLETADA</div>':'')
+    +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div style="font-size:28px">'+f.icono+'</div>'
+    +'<div><div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:800;text-transform:uppercase">'+f.nombre+'</div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+f.semanas+' semanas &middot; '+f.objetivo+'</div></div></div>'
+    +'<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:'+(isActual?'12':'0')+'px">'+f.descripcion+'</div>'
+    +(isActual?'<div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:10px"><div style="height:100%;background:var(--green);border-radius:4px;width:'+pct+'%"></div></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Semana '+semanaActual+' de '+semanasPorFase+'</span>'+btns+'</div>':'')
+    +'</div>';
+}
+
 async function loadFases(){
   if(!currentUser)return;
   const container=document.getElementById('fases-container');
   const label=document.getElementById('fases-prog-label');
   if(!container)return;
   container.innerHTML='<div class="lib-loading"><div class="lib-spinner"></div><span>Cargando programa...</span></div>';
-
-  let programas=null;
   try{
-    const {data,error}=await supa.from('fases_programa').select('*').eq('alumno_email',currentUser.email).eq('activo',true).limit(1);
+    const {data:programas,error}=await supa.from('fases_programa').select('*').eq('alumno_email',currentUser.email).limit(1);
     if(error)throw error;
-    programas=data;
-  }catch(e){
-    container.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)">
-      <div style="font-size:48px;margin-bottom:12px">📋</div>
-      <div style="margin-bottom:8px">No se pudo cargar el programa</div>
-      <div style="font-size:12px;color:var(--muted2)">${e.message}</div>
-      <button onclick="loadFases()" style="margin-top:16px;background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px 20px;cursor:pointer;font-family:'Barlow',sans-serif">Reintentar</button>
-    </div>`;
-    return;
-  }
-  const programa=programas?.[0];
-
-  if(!programa){
-    // No program yet — show create option
-    container.innerHTML=`
-      <div style="text-align:center;padding:32px 0">
-        <div style="font-size:64px;margin-bottom:16px">📋</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;margin-bottom:8px">Sin programa activo</div>
-        <div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">Tu entrenador puede asignarte un programa<br>por fases. También puedes iniciar el<br>programa estándar K9 ahora mismo.</div>
-        <button onclick="createDefaultProgram()" style="background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px 32px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">🚀 Iniciar Programa K9</button>
-      </div>`;
-    return;
-  }
-
-  const faseActual=programa.fase_actual||1;
-  const semanaActual=programa.semana_actual||1;
-  const totalFases=programa.total_fases||4;
-  const semanasPorFase=programa.semanas_por_fase||4;
-  const progTotal=((faseActual-1)*semanasPorFase+semanaActual)/(totalFases*semanasPorFase)*100;
-
-  if(label) label.textContent=`Fase ${faseActual}/${totalFases} · Sem. ${semanaActual}`;
-
-  container.innerHTML=`
-    <!-- Progreso general -->
-    <div style="background:var(--card);border-radius:16px;padding:18px;border:1px solid var(--border);margin-bottom:20px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;margin-bottom:4px">${programa.nombre_programa||'Programa K9 Fitness'}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Progreso general del programa</div>
-      <div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:8px">
-        <div style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-light));border-radius:4px;width:${Math.round(progTotal)}%;transition:width .5s"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
-        <span>Semana ${(faseActual-1)*semanasPorFase+semanaActual} de ${totalFases*semanasPorFase}</span>
-        <span style="color:var(--green-light);font-weight:600">${Math.round(progTotal)}% completado</span>
-      </div>
-    </div>
-
-    <!-- Fases -->
-    <div class="sec-title">Fases del programa</div>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
-      ${FASES_DEFAULT.map(f=>{
-        const isActual=f.numero===faseActual;
-        const isCompletada=f.numero<faseActual;
-        const isProxima=f.numero>faseActual;
-        return `<div style="background:${isActual?`rgba(${f.color.replace('#','').match(/../g).map(h=>parseInt(h,16)).join(',')}),.08`:'var(--card)'};border-radius:16px;padding:18px;border:${isActual?`2px solid ${f.color}`:'1px solid var(--border)'};position:relative;overflow:hidden;${isProxima?'opacity:.5':''}">
-          ${isActual?`<div style="position:absolute;top:0;right:0;background:${f.color};color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 16px 0 10px;text-transform:uppercase;letter-spacing:.5px">ACTIVA</div>`:''}
-          ${isCompletada?`<div style="position:absolute;top:0;right:0;background:#2ecc71;color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 16px 0 10px;text-transform:uppercase;letter-spacing:.5px">✓ COMPLETADA</div>`:''}
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-            <div style="font-size:32px">${f.icono}</div>
-            <div>
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;color:${isActual?f.color:'var(--text)'}">${f.nombre}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">${f.semanas} semanas · ${f.objetivo}</div>
-            </div>
-          </div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:${isActual?'14px':'0'}">${f.descripcion}</div>
-          ${isActual?`
-            <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:10px">
-              <div style="height:100%;background:${f.color};border-radius:4px;width:${Math.round((semanaActual/semanasPorFase)*100)}%"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:12px;color:var(--muted)">Semana ${semanaActual} de ${semanasPorFase}</span>
-              ${semanaActual<semanasPorFase
-                ?`<button onclick="avanzarSemana('${programa.id}',${semanaActual},${semanasPorFase},${faseActual},${totalFases})" style="background:${f.color};color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif">Semana completada →</button>`
-                :faseActual<totalFases
-                  ?`<button onclick="avanzarFase('${programa.id}',${faseActual},${totalFases})" style="background:${f.color};color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif">Completar fase ${faseActual} 🎉</button>`
-                  :`<div style="font-size:12px;color:#2ecc71;font-weight:700">🏆 ¡Programa completado!</div>`
-              }
-            </div>`:''}
+    const programa=programas?.[0];
+    if(!programa){
+      container.innerHTML=`
+        <div style="text-align:center;padding:32px 0">
+          <div style="font-size:64px;margin-bottom:16px">📋</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;margin-bottom:8px">Sin programa activo</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6">Tu entrenador puede asignarte un programa.<br>También puedes iniciar el programa K9 ahora.</div>
+          <button onclick="createDefaultProgram()" style="background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px 32px;font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">🚀 Iniciar Programa K9</button>
         </div>`;
-      }).join('')}
-    </div>
-
-    <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:14px;text-align:center;margin-bottom:20px;font-size:12px;color:var(--green-light);line-height:1.6">
-      💡 Completa cada semana de entrenamiento para avanzar en el programa. Tu entrenador puede ajustar el ritmo en cualquier momento.
-    </div>`;
+      return;
+    }
+    const faseActual=programa.fase_actual||1;
+    const semanaActual=programa.semana_actual||1;
+    const totalFases=programa.total_fases||4;
+    const semanasPorFase=programa.semanas_por_fase||4;
+    const progTotal=Math.min(100,((faseActual-1)*semanasPorFase+semanaActual)/(totalFases*semanasPorFase)*100);
+    if(label)label.textContent='Fase '+faseActual+'/'+totalFases+' · Sem. '+semanaActual;
+    const fasesHtml=FASES_DEFAULT.map(f=>buildFaseCard(f,faseActual,semanaActual,semanasPorFase,totalFases,programa.id)).join('');
+    container.innerHTML='<div style="background:var(--card);border-radius:16px;padding:18px;border:1px solid var(--border);margin-bottom:20px">'
+      +'<div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;margin-bottom:4px">'+(programa.nombre_programa||'Programa K9')+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-bottom:14px">Progreso general</div>'
+      +'<div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:8px"><div style="height:100%;background:linear-gradient(90deg,var(--green),var(--green-light));border-radius:4px;width:'+Math.round(progTotal)+'%"></div></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">'
+      +'<span>Semana '+((faseActual-1)*semanasPorFase+semanaActual)+' de '+(totalFases*semanasPorFase)+'</span>'
+      +'<span style="color:var(--green-light);font-weight:600">'+Math.round(progTotal)+'% completado</span></div></div>'
+      +'<div class="sec-title">Fases del programa</div>'
+      +'<div style="position:relative;display:flex;flex-direction:column;gap:12px;margin-bottom:20px">'+fasesHtml+'</div>'
+      +'<div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:14px;text-align:center;font-size:12px;color:var(--green-light);line-height:1.6">💡 Completa cada semana para avanzar en el programa.</div>';
+  }catch(e){
+    console.error('loadFases error:',e);
+    container.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">'
+      +'<div style="font-size:36px;margin-bottom:12px">⚠️</div>'
+      +'<div style="margin-bottom:16px">Error al cargar el programa</div>'
+      +'<button onclick="loadFases()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px 20px;cursor:pointer;font-family:Barlow,sans-serif">Reintentar</button>'
+      +'</div>';
+  }
 }
+
 
 async function createDefaultProgram(){
   if(!currentUser)return;
@@ -1681,10 +1663,10 @@ async function avanzarFase(progId, faseActual, totalFases){
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
     overlay.innerHTML=`
       <div style="font-size:72px">${f.icono}</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;text-transform:uppercase;color:${f.color};text-align:center">¡Fase ${faseActual} Completada!</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:#fff;text-align:center">Iniciando ${f.nombre}</div>
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:36px;font-weight:900;text-transform:uppercase;color:${f.color};text-align:center">¡Fase ${faseActual} Completada!</div>
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:700;color:#fff;text-align:center">Iniciando ${f.nombre}</div>
       <div style="font-size:13px;color:var(--muted);text-align:center;padding:0 32px;line-height:1.6">${f.objetivo}</div>
-      <button onclick="this.parentElement.remove();loadFases()" style="background:${f.color};color:#fff;border:none;border-radius:14px;padding:14px 40px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-top:8px">¡Vamos! 💪</button>`;
+      <button onclick="this.parentElement.remove();loadFases()" style="background:${f.color};color:#fff;border:none;border-radius:14px;padding:14px 40px;font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-top:8px">¡Vamos! 💪</button>`;
     document.body.appendChild(overlay);
     if(navigator.vibrate)navigator.vibrate([200,100,200,100,300]);
   }
@@ -1787,7 +1769,7 @@ async function calSelectDay(day){
       list.innerHTML=nombres.map(n=>{
         const exs=dayRutinas.filter(r=>r.nombre_rutina===n);
         return `<div style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--green);margin-bottom:8px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;color:var(--green-light);margin-bottom:8px">${n}</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;color:var(--green-light);margin-bottom:8px">${n}</div>
           ${exs.slice(0,4).map(e=>`<div style="font-size:13px;color:var(--muted);padding:2px 0">• ${e.ejercicio_nombre}</div>`).join('')}
           ${exs.length>4?`<div style="font-size:11px;color:var(--muted2);margin-top:4px">+${exs.length-4} más</div>`:''}
         </div>`;
@@ -1839,7 +1821,7 @@ function renderAnamneseStep(){
   if(backBtn)backBtn.style.display=anamneseStep>0?'block':'none';
   if(nextBtn)nextBtn.textContent=anamneseStep===ANAMNESE_STEPS.length-1?'Finalizar ✓':'Siguiente →';
   if(!content)return;
-  content.innerHTML=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:20px;color:var(--green-light)">${anamneseStep+1}. ${step.title}</div>
+  content.innerHTML=`<div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:20px;color:var(--green-light)">${anamneseStep+1}. ${step.title}</div>
     ${step.fields.map(f=>`<div class="input-group">
       <label class="input-label">${f.label}</label>
       ${f.type==='select'
@@ -1879,19 +1861,13 @@ function checkAnamnese(){
 
 // ─── 14. MODO OFFLINE ────────────────────────────────────────────────────────
 function registerServiceWorker(){
-  if(!('serviceWorker' in navigator))return;
-  var swCode=[
-    "const C='k9v2';",
-    "self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll([location.href]).catch(()=>{})));self.skipWaiting();});",
-    "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});",
-    "self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||e.request.url.includes('supabase'))return;",
-    "e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){var cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;})",
-    ".catch(()=>caches.match(e.request).then(r=>r||new Response('Offline',{headers:{'Content-Type':'text/html'}}))));});"
-  ].join('\n');
-  try{
-    var blob=new Blob([swCode],{type:'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(function(){});
-  }catch(e){}
+  // Service worker disabled - causes cache issues with GitHub Pages
+  // Unregister any existing service workers
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs=>{
+      regs.forEach(r=>r.unregister());
+    });
+  }
 }
 
 function setupOfflineDetection(){
@@ -2062,7 +2038,7 @@ function renderFeedPost(post, preview=false){
   const time=formatChatTime(post.created_at);
   return `<div style="background:var(--card);border-radius:18px;border:1px solid var(--border);padding:16px;margin-bottom:12px" id="post-${post.id}">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">${initials}</div>
+      <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">${initials}</div>
       <div style="flex:1">
         <div style="font-size:14px;font-weight:600">${post.alumno_nombre||'Atleta K9'}</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
@@ -2073,18 +2049,18 @@ function renderFeedPost(post, preview=false){
     </div>
     ${post.ejercicio&&post.peso_kg?`<div style="background:linear-gradient(135deg,rgba(243,156,18,.1),rgba(243,156,18,.05));border:1px solid rgba(243,156,18,.2);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
       <span style="font-size:28px">🏆</span>
-      <div><div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase">${post.ejercicio}</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#f39c12">${post.peso_kg} kg</div></div>
+      <div><div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:900;text-transform:uppercase">${post.ejercicio}</div>
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#f39c12">${post.peso_kg} kg</div></div>
     </div>`:post.duracion_min?`<div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:10px 16px;margin-bottom:10px;display:flex;gap:16px">
-      <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--green-light)">${post.duracion_min}</div><div style="font-size:10px;color:var(--muted)">minutos</div></div>
+      <div style="text-align:center"><div style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:var(--green-light)">${post.duracion_min}</div><div style="font-size:10px;color:var(--muted)">minutos</div></div>
     </div>`:''}
     ${post.contenido?`<div style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:12px">${post.contenido}</div>`:''}
     ${!preview?`<div style="display:flex;gap:16px;padding-top:10px;border-top:1px solid var(--border)">
-      <button onclick="toggleLike('${post.id}')" id="like-btn-${post.id}" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;padding:0">
+      <button onclick="toggleLike('${post.id}')" id="like-btn-${post.id}" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;padding:0">
         <span id="like-icon-${post.id}">🤍</span> <span id="like-count-${post.id}">${post.likes||0}</span>
       </button>
-      <button onclick="showComments('${post.id}')" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;padding:0">💬 Comentar</button>
-      ${post.alumno_email===currentUser?.email?`<button onclick="deletePost('${post.id}')" style="margin-left:auto;background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;font-family:'Barlow',sans-serif">✕ Eliminar</button>`:''}
+      <button onclick="showComments('${post.id}')" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;padding:0">💬 Comentar</button>
+      ${post.alumno_email===currentUser?.email?`<button onclick="deletePost('${post.id}')" style="margin-left:auto;background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;font-family:Barlow,sans-serif">✕ Eliminar</button>`:''}
     </div>
     <div id="comments-${post.id}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px"></div>`:''}
   </div>`;
@@ -2158,7 +2134,7 @@ async function showComments(postId){
     </div>`).join('')+`
   <div style="display:flex;gap:8px;margin-top:8px">
     <input id="comment-input-${postId}" class="input-field" placeholder="Añade un comentario..." style="flex:1;padding:8px 12px;font-size:13px">
-    <button onclick="sendComment('${postId}')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">→</button>
+    <button onclick="sendComment('${postId}')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:Barlow,sans-serif">→</button>
   </div>`;
 }
 
@@ -2935,11 +2911,11 @@ async function loadPRsList(){
       <div style="background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
         <div style="font-size:24px">🏆</div>
         <div style="flex:1">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase">${r.ejercicio}</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;text-transform:uppercase">${r.ejercicio}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px">${new Date(r.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#f39c12">${r.peso_kg}kg</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#f39c12">${r.peso_kg}kg</div>
           ${r.reps?`<div style="font-size:11px;color:var(--muted)">${r.reps} reps</div>`:''}
         </div>
       </div>`).join('')}
@@ -3077,11 +3053,11 @@ function showPRCelebration(ejercicio, pesoKg){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:fadeIn .3s ease';
   overlay.innerHTML=`
     <div style="font-size:80px;animation:bounce 0.6s infinite alternate">🏆</div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;text-transform:uppercase;color:#f39c12;text-align:center;letter-spacing:2px">¡Nuevo récord!</div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:#fff;text-align:center">${ejercicio}</div>
-    <div style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;padding:12px 32px;border-radius:20px">${pesoKg} kg</div>
+    <div style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;text-transform:uppercase;color:#f39c12;text-align:center;letter-spacing:2px">¡Nuevo récord!</div>
+    <div style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:700;color:#fff;text-align:center">${ejercicio}</div>
+    <div style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-family:Barlow Condensed,sans-serif;font-size:36px;font-weight:900;padding:12px 32px;border-radius:20px">${pesoKg} kg</div>
     <div style="font-size:14px;color:var(--muted);text-align:center">¡Superaste tu mejor marca personal!</div>
-    <button onclick="this.parentElement.remove()" style="margin-top:8px;background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px 40px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">¡Continuar! 💪</button>`;
+    <button onclick="this.parentElement.remove()" style="margin-top:8px;background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px 40px;font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">¡Continuar! 💪</button>`;
   document.body.appendChild(overlay);
   if(navigator.vibrate)navigator.vibrate([100,50,100,50,300]);
   setTimeout(()=>{if(overlay.parentElement)overlay.remove();},8000);
@@ -3151,7 +3127,7 @@ async function loadEntrenadorPanel(){
     const initials=(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     const plan=(a.plan||'basico').charAt(0).toUpperCase()+(a.plan||'basico').slice(1);
     return `<div onclick="openAlumnoDetail('${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}','${plan}')" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;active:background:var(--card2)">
-      <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#fff;flex-shrink:0">${initials}</div>
+      <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:900;color:#fff;flex-shrink:0">${initials}</div>
       <div style="flex:1">
         <div style="font-size:15px;font-weight:600">${a.full_name||a.email}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.email}</div>
@@ -3199,15 +3175,15 @@ async function loadAlumnoWeeklyPlan(email){
       return `<div style="background:var(--card);border-radius:14px;border:1px solid ${hasRutina?'var(--green)':'var(--border)'};padding:14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${hasRutina?'10':'0'}px">
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:36px;height:36px;border-radius:10px;background:${hasRutina?'var(--green-glow)':'var(--card2)'};border:1px solid ${hasRutina?'rgba(91,168,50,.3)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:${hasRutina?'var(--green-light)':'var(--muted)'}">${dia.slice(0,3).toUpperCase()}</div>
+            <div style="width:36px;height:36px;border-radius:10px;background:${hasRutina?'var(--green-glow)':'var(--card2)'};border:1px solid ${hasRutina?'rgba(91,168,50,.3)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;font-family:Barlow Condensed,sans-serif;color:${hasRutina?'var(--green-light)':'var(--muted)'}">${dia.slice(0,3).toUpperCase()}</div>
             <div>
               <div style="font-weight:600;font-size:14px">${dia}</div>
               ${nombres.length?`<div style="font-size:11px;color:var(--green-light)">${nombres.join(', ')}</div>`:`<div style="font-size:11px;color:var(--muted2)">Sin entrenamiento</div>`}
             </div>
           </div>
           <div style="display:flex;gap:6px">
-            <button onclick="openCrearRutina('${email}','${nombreAlumno.replace(/'/g,"\\'")}','${dia}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif">+ Agregar</button>
-            ${hasRutina?`<button onclick="deleteRutinasDia('${email}','${dia}')" style="background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'Barlow',sans-serif">🗑</button>`:''}
+            <button onclick="openCrearRutina('${email}','${nombreAlumno.replace(/'/g,"\\'")}','${dia}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">+ Agregar</button>
+            ${hasRutina?`<button onclick="deleteRutinasDia('${email}','${dia}')" style="background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:Barlow,sans-serif">🗑</button>`:''}
           </div>
         </div>
         ${hasRutina?`<div style="display:flex;flex-wrap:wrap;gap:5px">${exs.slice(0,5).map(e=>`<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">${e.ejercicio_nombre}</div>`).join('')}${exs.length>5?`<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">+${exs.length-5} más</div>`:''}</div>`:''}
@@ -3277,7 +3253,7 @@ function renderEjerciciosSeleccionados(){
     <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:12px;align-items:center" id="rutina-ex-${i}">
       ${ex.img?`<img src="${ex.img}" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:52px;height:52px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏋️</div>`}
       <div style="flex:1;min-width:0">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
         <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
           <span style="background:var(--card2);border-radius:6px;padding:2px 8px;font-size:11px">${ex.series||3} series</span>
           <span style="background:var(--card2);border-radius:6px;padding:2px 8px;font-size:11px">${ex.reps||10} reps</span>
@@ -3461,7 +3437,7 @@ function renderLibRutina(){
         :''}
       <div style="width:100%;height:110px;background:var(--card2);display:${imgUrl?'none':'flex'};align-items:center;justify-content:center;font-size:36px">🏋️</div>
       <div style="padding:8px 10px 10px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;line-height:1.2;margin-bottom:3px;color:${isSelected?'var(--green-light)':'var(--text)'}">${ex.name}</div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;line-height:1.2;margin-bottom:3px;color:${isSelected?'var(--green-light)':'var(--text)'}">${ex.name}</div>
         <div style="font-size:10px;color:var(--muted);text-transform:capitalize">${muscleLabel}</div>
       </div>
     </div>`;
@@ -3586,12 +3562,12 @@ function loadTemplates(){
     <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;display:flex;align-items:center;gap:14px">
       <div style="width:52px;height:52px;border-radius:14px;background:var(--green-glow);border:1px solid rgba(91,168,50,.3);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${t.emoji}</div>
       <div style="flex:1;cursor:pointer" onclick="openTemplate('${t.id}')">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.ejercicios.length} ejercicios · ${t.dia}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <button onclick="editPredefinedTemplate('${t.id}')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif">✏️ Editar</button>
-        <button onclick="openTemplate('${t.id}')" style="background:var(--green);border:none;border-radius:8px;padding:5px 10px;font-size:12px;color:#fff;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600">Aplicar</button>
+        <button onclick="editPredefinedTemplate('${t.id}')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--muted);cursor:pointer;font-family:Barlow,sans-serif">✏️ Editar</button>
+        <button onclick="openTemplate('${t.id}')" style="background:var(--green);border:none;border-radius:8px;padding:5px 10px;font-size:12px;color:#fff;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600">Aplicar</button>
       </div>
     </div>`).join('');
   loadCustomTemplates();
@@ -3620,10 +3596,10 @@ function renderRBACard(t, idxOrId, type){
   return `<div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
     <div style="width:46px;height:46px;border-radius:12px;background:var(--green-glow);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${t.emoji||'📋'}</div>
     <div style="flex:1;min-width:0">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;text-transform:uppercase;line-height:1.1">${t.name}</div>
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:800;text-transform:uppercase;line-height:1.1">${t.name}</div>
       <div style="font-size:11px;color:var(--muted);margin-top:3px">${(t.ejercicios||[]).length} ejercicios · ${t.dia||'—'}</div>
     </div>
-    <button onclick="applyRBAToCurrentAlumno('${type}_${idxOrId}')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;flex-shrink:0">Aplicar</button>
+    <button onclick="applyRBAToCurrentAlumno('${type}_${idxOrId}')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;flex-shrink:0">Aplicar</button>
   </div>`;
 }
 
@@ -3642,9 +3618,12 @@ async function applyRBAToCurrentAlumno(typeAndId){
   }));
   const {error}=await supa.from('rutinas').insert(rows);
   if(error){showToast('⚠️ Error: '+error.message,'error');return;}
-  showToast(`✓ "${t.name}" asignado a ${currentAlumnoNombre} 🎉`);
+  showToast('✓ "'+t.name+'" asignado a '+currentAlumnoNombre+' 🎉');
+  // Force screen back to alumno detail and reload plan
+  const planEl=document.getElementById('alumno-weekly-plan');
+  if(planEl)planEl.innerHTML='<div class="lib-loading"><div class="lib-spinner"></div></div>';
   goScreen('s-alumno-detail');
-  loadAlumnoWeeklyPlan(currentAlumnoEmail);
+  setTimeout(()=>loadAlumnoWeeklyPlan(currentAlumnoEmail),300);
 }
 
 // ─── EDITAR TEMPLATE PREDEFINIDO ─────────────────────────────────────────────
@@ -3675,24 +3654,24 @@ function renderEditTemplateExercicios(){
     <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="width:28px;height:28px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
-        <input value="${ex.name}" onchange="editingTemplateExercicios[${i}].name=this.value" style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:14px;font-weight:600;color:var(--text);font-family:'Barlow',sans-serif">
+        <input value="${ex.name}" onchange="editingTemplateExercicios[${i}].name=this.value" style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:14px;font-weight:600;color:var(--text);font-family:Barlow,sans-serif">
         <button onclick="editingTemplateExercicios.splice(${i},1);renderEditTemplateExercicios()" style="background:none;border:none;color:var(--muted2);font-size:18px;cursor:pointer;padding:4px">✕</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
         <div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase">Series</div>
-          <input type="number" value="${ex.series||3}" min="1" max="10" onchange="editingTemplateExercicios[${i}].series=parseInt(this.value)||3" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:14px;font-weight:600;color:var(--text);text-align:center;font-family:'Barlow Condensed',sans-serif">
+          <input type="number" value="${ex.series||3}" min="1" max="10" onchange="editingTemplateExercicios[${i}].series=parseInt(this.value)||3" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:14px;font-weight:600;color:var(--text);text-align:center;font-family:Barlow Condensed,sans-serif">
         </div>
         <div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase">Reps</div>
-          <input value="${ex.reps||'10'}" onchange="editingTemplateExercicios[${i}].reps=this.value" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:14px;font-weight:600;color:var(--text);text-align:center;font-family:'Barlow Condensed',sans-serif">
+          <input value="${ex.reps||'10'}" onchange="editingTemplateExercicios[${i}].reps=this.value" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:14px;font-weight:600;color:var(--text);text-align:center;font-family:Barlow Condensed,sans-serif">
         </div>
         <div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase">Descanso</div>
-          <input value="${ex.descanso||'60s'}" onchange="editingTemplateExercicios[${i}].descanso=this.value" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:14px;font-weight:600;color:var(--text);text-align:center;font-family:'Barlow Condensed',sans-serif">
+          <input value="${ex.descanso||'60s'}" onchange="editingTemplateExercicios[${i}].descanso=this.value" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px;font-size:14px;font-weight:600;color:var(--text);text-align:center;font-family:Barlow Condensed,sans-serif">
         </div>
       </div>
-      <input placeholder="Observación / nota (opcional)" value="${ex.obs||''}" onchange="editingTemplateExercicios[${i}].obs=this.value" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);font-family:'Barlow',sans-serif">
+      <input placeholder="Observación / nota (opcional)" value="${ex.obs||''}" onchange="editingTemplateExercicios[${i}].obs=this.value" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);font-family:Barlow,sans-serif">
     </div>`).join('');
 }
 
@@ -3763,7 +3742,7 @@ function loadCustomTemplates(){
     <div style="background:var(--card);border-radius:16px;border:1px solid rgba(91,168,50,.3);padding:16px;display:flex;align-items:center;gap:14px">
       <div onclick="openCustomTemplate(${i})" style="width:52px;height:52px;border-radius:14px;background:var(--green-glow);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;cursor:pointer">${t.emoji||'📋'}</div>
       <div style="flex:1;cursor:pointer" onclick="openCustomTemplate(${i})">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.ejercicios?.length||0} ejercicios · ${t.dia||'—'}</div>
       </div>
       <button onclick="deleteCustomTemplate(${i})" style="background:none;border:1px solid rgba(231,76,60,.2);border-radius:8px;padding:6px 10px;color:#e74c3c;font-size:12px;cursor:pointer;flex-shrink:0">🗑</button>
@@ -3794,7 +3773,7 @@ function renderTplEjercicios(){
     <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center">
       ${ex.img?`<img src="${ex.img}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:44px;height:44px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏋️</div>`}
       <div style="flex:1;min-width:0">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
         <div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap">
           <input type="number" value="${ex.series||3}" min="1" max="10" style="width:46px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios[${i}].series=parseInt(this.value)||3" title="Series">
           <input value="${ex.reps||'10'}" style="width:52px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios[${i}].reps=this.value" title="Reps">
@@ -3879,7 +3858,7 @@ function openCustomTemplate(idx){
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Selecciona el alumno al que deseas aplicar esta rutina base.</div>
     <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:16px">
       ${(t.ejercicios||[]).map((ex,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i<t.ejercicios.length-1?'border-bottom:1px solid var(--border)':''}">
-        <div style="width:28px;height:28px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
+        <div style="width:28px;height:28px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
         ${ex.img?`<img src="${ex.img}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:''}
         <div style="flex:1">
           <div style="font-weight:600;font-size:13px">${ex.name}</div>
@@ -3896,13 +3875,13 @@ function openCustomTemplate(idx){
     if(!listEl)return;
     if(!alumnos?.length){listEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay alumnos disponibles</div>';return;}
     listEl.innerHTML=alumnos.map(a=>`
-      <button onclick="applyCustomTemplateToAlumno(${idx},'${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif">
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">${(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+      <button onclick="applyCustomTemplateToAlumno(${idx},'${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;font-family:Barlow,sans-serif">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">${(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:600;color:var(--text)">${a.full_name||a.email}</div>
           <div style="font-size:11px;color:var(--muted)">${a.email}</div>
         </div>
-        <div style="background:var(--green);color:#fff;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Aplicar</div>
+        <div style="background:var(--green);color:#fff;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;font-family:Barlow Condensed,sans-serif;text-transform:uppercase;letter-spacing:.5px">Aplicar</div>
       </button>`).join('');
   });
 }
@@ -3926,7 +3905,14 @@ async function applyCustomTemplateToAlumno(idx, alumnoEmail, alumnoNombre){
   const {error}=await supa.from('rutinas').insert(rows);
   if(error){showToast('⚠️ Error al aplicar','error');return;}
   showToast('✓ "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
-  goScreen('s-entrenador');
+  if(currentAlumnoEmail===alumnoEmail){
+    const planEl=document.getElementById('alumno-weekly-plan');
+    if(planEl)planEl.innerHTML='<div class="lib-loading"><div class="lib-spinner"></div></div>';
+    goScreen('s-alumno-detail');
+    setTimeout(()=>loadAlumnoWeeklyPlan(alumnoEmail),300);
+  } else {
+    goScreen('s-entrenador');
+  }
 }
 
 function openTemplate(templateId){
@@ -3940,7 +3926,7 @@ function openTemplate(templateId){
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Revisa los ejercicios y selecciona el alumno al que quieres aplicar este template.</div>
     <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:16px">
       ${t.ejercicios.map((ex,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i<t.ejercicios.length-1?'border-bottom:1px solid var(--border)':''}">
-        <div style="width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
+        <div style="width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
         <div style="flex:1">
           <div style="font-weight:600;font-size:13px">${ex.name}</div>
           <div style="font-size:11px;color:var(--muted)">${ex.series} series × ${ex.reps} reps · ${ex.descanso}</div>
@@ -3958,13 +3944,13 @@ function openTemplate(templateId){
     if(!listEl)return;
     if(!alumnos?.length){listEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay alumnos disponibles</div>';return;}
     listEl.innerHTML=alumnos.map(a=>`
-      <button onclick="applyTemplateToAlumno('${templateId}','${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif">
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">${(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+      <button onclick="applyTemplateToAlumno('${templateId}','${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;font-family:Barlow,sans-serif">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">${(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:600;color:var(--text)">${a.full_name||a.email}</div>
           <div style="font-size:11px;color:var(--muted)">${a.email}</div>
         </div>
-        <div style="background:var(--green);color:#fff;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Aplicar</div>
+        <div style="background:var(--green);color:#fff;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;font-family:Barlow Condensed,sans-serif;text-transform:uppercase;letter-spacing:.5px">Aplicar</div>
       </button>`).join('');
   });
 }
@@ -3987,11 +3973,12 @@ async function applyTemplateToAlumno(templateId, alumnoEmail, alumnoNombre){
   }));
   const {error}=await supa.from('rutinas').insert(rows);
   if(error){showToast('⚠️ Error al aplicar template','error');return;}
-  showToast('✓ Template "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
-  // If we have a current alumno context, go back to their detail
+  showToast('✓ "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
   if(currentAlumnoEmail===alumnoEmail){
+    const planEl=document.getElementById('alumno-weekly-plan');
+    if(planEl)planEl.innerHTML='<div class="lib-loading"><div class="lib-spinner"></div></div>';
     goScreen('s-alumno-detail');
-    loadAlumnoWeeklyPlan(alumnoEmail);
+    setTimeout(()=>loadAlumnoWeeklyPlan(alumnoEmail),300);
   } else {
     goScreen('s-entrenador');
   }
@@ -4078,7 +4065,7 @@ function qmRenderExercise(){
 
   // Series dots
   const dotsHtml=Array.from({length:ex.series},(_,i)=>
-    `<div style="width:40px;height:40px;border-radius:50%;border:2px solid ${i<qmSerieIdx?'var(--green)':i===qmSerieIdx?'var(--green-light)':'var(--border)'};background:${i<qmSerieIdx?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${i<qmSerieIdx?'#fff':i===qmSerieIdx?'var(--green-light)':'var(--muted)'}">${i+1}</div>`
+    `<div style="width:40px;height:40px;border-radius:50%;border:2px solid ${i<qmSerieIdx?'var(--green)':i===qmSerieIdx?'var(--green-light)':'var(--border)'};background:${i<qmSerieIdx?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;color:${i<qmSerieIdx?'#fff':i===qmSerieIdx?'var(--green-light)':'var(--muted)'}">${i+1}</div>`
   ).join('');
   document.getElementById('qm-series-dots').innerHTML=dotsHtml;
 
@@ -4157,12 +4144,12 @@ function renderHistorialCard(h){
     <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green);border-radius:2px"></div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
       <div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;line-height:1.1">${h.nombre_rutina||'Entrenamiento'}</div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;line-height:1.1">${h.nombre_rutina||'Entrenamiento'}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${fecha}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="background:${pct>=80?'var(--green-glow)':'var(--card2)'};border:1px solid ${pct>=80?'rgba(91,168,50,.3)':'var(--border)'};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:${pct>=80?'var(--green-light)':'var(--muted)'}">${pct}%</div>
-        <button onclick="exportHistorialPDF(${JSON.stringify(h).replace(/"/g,'&quot;')})" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif">📄</button>
+        <button onclick="exportHistorialPDF(${JSON.stringify(h).replace(/"/g,'&quot;')})" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted);cursor:pointer;font-family:Barlow,sans-serif">📄</button>
       </div>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap">
@@ -4205,7 +4192,7 @@ async function loadHistorialFull(){
     byMonth[key].push(h);
   });
   el.innerHTML=Object.entries(byMonth).map(([month,items])=>`
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin:16px 0 10px">${month}</div>
+    <div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin:16px 0 10px">${month}</div>
     ${items.map(renderHistorialCard).join('')}
   `).join('');
 }
@@ -4304,34 +4291,34 @@ function showWorkoutSummary(mins, doneDots, totalDots, volumen, kcal, hrMax, rut
   overlay.innerHTML=`
     <div style="background:var(--surface);padding:52px 20px 20px;border-bottom:1px solid var(--border)">
       <div style="font-size:13px;color:var(--green-light);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">✓ Entrenamiento completado</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;line-height:1.1">${rutinaNombre}</div>
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;line-height:1.1">${rutinaNombre}</div>
       <div style="font-size:13px;color:var(--muted);margin-top:6px">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div>
     </div>
     <div style="padding:20px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
         <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--green-light)">${mins}</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;color:var(--green-light)">${mins}</div>
           <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Minutos</div>
         </div>
         <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#e74c3c">${kcal}</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;color:#e74c3c">${kcal}</div>
           <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Calorías</div>
         </div>
         <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#f39c12">${Math.round(volumen)}</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;color:#f39c12">${Math.round(volumen)}</div>
           <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Vol. total kg</div>
         </div>
         <div style="background:var(--card);border-radius:16px;padding:20px;text-align:center;border:1px solid var(--border)">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--text)">${pct}%</div>
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;color:var(--text)">${pct}%</div>
           <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Completado</div>
         </div>
       </div>
-      ${hrMax?`<div style="background:var(--card);border-radius:16px;padding:16px;text-align:center;border:1px solid var(--border);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px"><span style="font-size:24px">❤️</span><div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#e74c3c">${hrMax} bpm</div><div style="font-size:12px;color:var(--muted)">Frecuencia cardíaca máxima</div></div></div>`:''}
+      ${hrMax?`<div style="background:var(--card);border-radius:16px;padding:16px;text-align:center;border:1px solid var(--border);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px"><span style="font-size:24px">❤️</span><div><div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#e74c3c">${hrMax} bpm</div><div style="font-size:12px;color:var(--muted)">Frecuencia cardíaca máxima</div></div></div>`:''}
       <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:14px;padding:16px;text-align:center;margin-bottom:20px">
         <div style="font-size:13px;color:var(--green-light);line-height:1.6">${getMotivationalMsg(pct, mins)}</div>
       </div>
-      <button onclick="document.getElementById('workout-summary-overlay').remove()" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-bottom:10px">¡Listo! 🏠</button>
-      <button onclick="exportSummaryPDF('${rutinaNombre}',${mins},${kcal},${Math.round(volumen)},${pct},${hrMax||0})" style="width:100%;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:14px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">📄 Exportar PDF</button>
+      <button onclick="document.getElementById('workout-summary-overlay').remove()" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:16px;font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-bottom:10px">¡Listo! 🏠</button>
+      <button onclick="exportSummaryPDF('${rutinaNombre}',${mins},${kcal},${Math.round(volumen)},${pct},${hrMax||0})" style="width:100%;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:14px;padding:14px;font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">📄 Exportar PDF</button>
     </div>`;
   document.body.appendChild(overlay);
   if(navigator.vibrate)navigator.vibrate([100,50,200]);
