@@ -343,7 +343,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item active" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
+    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -392,7 +392,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item active" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
+    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -549,7 +549,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
+    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item active" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -571,7 +571,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
+    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item" onclick="navTo('perfil')"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div></div>
   </div>
@@ -686,7 +686,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
   <div class="bottom-nav">
     <div class="nav-item" onclick="navTo('inicio')"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
     <div class="nav-item" onclick="navTo('entrenar')"><div class="nav-icon">🏋️</div><div class="nav-label">Entrenar</div></div>
-    <div class="nav-item" onclick="navTo('comunidad')"><div class="nav-icon">🔥</div><div class="nav-label">Comunidad</div></div>
+    <div class="nav-item" onclick="navTo('biblioteca')"><div class="nav-icon">📚</div><div class="nav-label">Biblioteca</div></div>
     <div class="nav-item" onclick="navTo('progreso')"><div class="nav-icon">📊</div><div class="nav-label">Progreso</div></div>
     <div class="nav-item active" onclick="navTo('perfil')" style="position:relative"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div id="notif-dot-nav" style="display:none;position:absolute;top:4px;right:22px;width:8px;height:8px;background:var(--green);border-radius:50%;border:2px solid var(--surface)"></div></div>
   </div>
@@ -3003,15 +3003,12 @@ async function openBibliotecaParaRutina(){
 
 function setLibRutinaFilter(type,val){
   libRutinaFilter[type]=val;
+  // Update button styles using data-val
   document.querySelectorAll('.lib-rutina-filter').forEach(b=>{
-    const isActive=(type==='muscle'&&b.textContent.trim()===(val===''?'Todos':b.textContent.trim())&&(val===''||(b.getAttribute('onclick')||'').includes(val)));
-    if(type==='muscle'){
-      const btnVal=(b.getAttribute('onclick')||'').match(/'([^']*)'\)$/)?.[1]||'';
-      const active=btnVal===val;
-      b.style.background=active?'var(--green)':'var(--card)';
-      b.style.color=active?'#fff':'var(--muted)';
-      b.style.border=active?'none':'1px solid var(--border)';
-    }
+    const isActive=b.dataset.val===val;
+    b.style.background=isActive?'var(--green)':'var(--card)';
+    b.style.color=isActive?'#fff':'var(--muted)';
+    b.style.border=isActive?'none':'1px solid var(--border)';
   });
   renderLibRutina();
 }
@@ -3025,21 +3022,56 @@ function renderLibRutina(){
   const el=document.getElementById('lib-rutina-list');
   if(!el)return;
   let exs=allLibExercises;
-  if(libRutinaFilter.muscle) exs=exs.filter(e=>(e.bodyPart||'').toLowerCase().includes(libRutinaFilter.muscle)||(e.target||'').toLowerCase().includes(libRutinaFilter.muscle)||(e.secondaryMuscles||[]).some(m=>m.toLowerCase().includes(libRutinaFilter.muscle)));
-  if(libRutinaFilter.search) exs=exs.filter(e=>(e.name||'').toLowerCase().includes(libRutinaFilter.search)||(e.bodyPart||'').toLowerCase().includes(libRutinaFilter.search));
-  exs=exs.slice(0,60);
-  el.innerHTML=exs.map(ex=>{
+  if(libRutinaFilter.muscle){
+    const f=libRutinaFilter.muscle.toLowerCase();
+    exs=exs.filter(e=>
+      (e.bodyPart||'').toLowerCase().includes(f)||
+      (e.target||'').toLowerCase().includes(f)||
+      (e.secondaryMuscles||[]).some(m=>m.toLowerCase().includes(f))
+    );
+  }
+  if(libRutinaFilter.search){
+    const s=libRutinaFilter.search;
+    exs=exs.filter(e=>
+      (e.name||'').toLowerCase().includes(s)||
+      (e.bodyPart||'').toLowerCase().includes(s)||
+      (e.target||'').toLowerCase().includes(s)
+    );
+  }
+  const shown=exs.slice(0,80);
+  if(!shown.length){
+    el.innerHTML='<div style="grid-column:span 2;text-align:center;padding:40px 20px;color:var(--muted)">No se encontraron ejercicios<br>para este filtro</div>';
+    return;
+  }
+  el.innerHTML=shown.map(ex=>{
     const isSelected=libRutinaSelected.has(ex.id||ex.name);
-    const imgUrl=ex.gifUrl||((ex.images||[])[0]?CDN+'exercises/'+ex.images[0]:'');
-    return `<div onclick="toggleLibRutinaSelect('${(ex.id||ex.name).replace(/'/g,"\\'")}','${(ex.name||'').replace(/'/g,"\\'").replace(/"/g,'\\"')}','${(ex.bodyPart||'').replace(/'/g,"\\'")}','${imgUrl.replace(/'/g,"\\'")}','${(ex.target||'').replace(/'/g,"\\'")}' )" style="background:var(--card);border:2px solid ${isSelected?'var(--green)':'var(--border)'};border-radius:14px;overflow:hidden;cursor:pointer;position:relative" id="lib-rutina-ex-${(ex.id||ex.name).replace(/[^a-z0-9]/gi,'')}">
-      ${isSelected?'<div style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:1">✓</div>':''}
-      ${imgUrl?`<img src="${imgUrl}" style="width:100%;height:100px;object-fit:cover" loading="lazy" onerror="this.style.display='none'">`:'<div style="width:100%;height:100px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:32px">🏋️</div>'}
-      <div style="padding:8px 10px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;line-height:1.2;margin-bottom:3px">${ex.name}</div>
-        <div style="font-size:10px;color:var(--muted);text-transform:capitalize">${ex.bodyPart||''}</div>
+    // Build image URL
+    let imgUrl='';
+    if(ex.gifUrl) imgUrl=ex.gifUrl;
+    else if(ex.images&&ex.images.length) imgUrl=CDN+'exercises/'+ex.images[0];
+    const safeId=(ex.id||ex.name).replace(/[^a-z0-9]/gi,'');
+    const safeName=(ex.name||'').replace(/'/g,"\\'").replace(/"/g,'\\"');
+    const safeBodyPart=(ex.bodyPart||'').replace(/'/g,"\\'");
+    const safeImg=imgUrl.replace(/'/g,"\\'");
+    const safeTarget=(ex.target||'').replace(/'/g,"\\'");
+    const muscleLabel=ex.bodyPart?ex.bodyPart.charAt(0).toUpperCase()+ex.bodyPart.slice(1):'';
+    return `<div onclick="toggleLibRutinaSelect('${ex.id||ex.name}','${safeName}','${safeBodyPart}','${safeImg}','${safeTarget}')" style="background:var(--card);border:2px solid ${isSelected?'var(--green)':'var(--border)'};border-radius:14px;overflow:hidden;cursor:pointer;position:relative;transition:border-color .2s" id="lib-rutina-ex-${safeId}">
+      ${isSelected?`<div style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:2;font-weight:700">✓</div>`:''}
+      ${imgUrl
+        ?`<img src="${imgUrl}" style="width:100%;height:110px;object-fit:cover;background:var(--card2)" loading="lazy" onerror="this.src='';this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        :''}
+      <div style="width:100%;height:110px;background:var(--card2);display:${imgUrl?'none':'flex'};align-items:center;justify-content:center;font-size:36px">🏋️</div>
+      <div style="padding:8px 10px 10px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;line-height:1.2;margin-bottom:3px;color:${isSelected?'var(--green-light)':'var(--text)'}">${ex.name}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:capitalize">${muscleLabel}</div>
       </div>
     </div>`;
   }).join('');
+  // Show count
+  const total=exs.length;
+  if(total>80){
+    el.innerHTML+=`<div style="grid-column:span 2;text-align:center;padding:12px;font-size:12px;color:var(--muted)">Mostrando 80 de ${total}. Usa el buscador para filtrar más.</div>`;
+  }
 }
 
 function toggleLibRutinaSelect(id,name,muscle,img,target){
@@ -3875,14 +3907,18 @@ init();
   <!-- Filtros -->
   <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
     <input id="lib-rutina-search" class="input-field" placeholder="🔍 Buscar ejercicio..." style="margin:0;padding:10px 14px;font-size:14px" oninput="filterBibliotecaRutina()">
-    <div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px" id="lib-rutina-muscle-filters">
-      <div onclick="setLibRutinaFilter('muscle','')" class="lib-rutina-filter active-filter" style="flex-shrink:0;padding:5px 12px;background:var(--green);color:#fff;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Todos</div>
-      <div onclick="setLibRutinaFilter('muscle','chest')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Pecho</div>
-      <div onclick="setLibRutinaFilter('muscle','back')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Espalda</div>
-      <div onclick="setLibRutinaFilter('muscle','shoulders')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Hombros</div>
-      <div onclick="setLibRutinaFilter('muscle','upper arms')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Brazos</div>
-      <div onclick="setLibRutinaFilter('muscle','upper legs')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Piernas</div>
-      <div onclick="setLibRutinaFilter('muscle','waist')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Core</div>
+    <div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch" id="lib-rutina-muscle-filters">
+      <div onclick="setLibRutinaFilter('muscle','')" class="lib-rutina-filter" data-val="" style="flex-shrink:0;padding:6px 14px;background:var(--green);color:#fff;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:none">Todos</div>
+      <div onclick="setLibRutinaFilter('muscle','chest')" class="lib-rutina-filter" data-val="chest" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">💪 Pecho</div>
+      <div onclick="setLibRutinaFilter('muscle','back')" class="lib-rutina-filter" data-val="back" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🏋️ Espalda</div>
+      <div onclick="setLibRutinaFilter('muscle','shoulders')" class="lib-rutina-filter" data-val="shoulders" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🎯 Hombros</div>
+      <div onclick="setLibRutinaFilter('muscle','upper arms')" class="lib-rutina-filter" data-val="upper arms" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">💪 Brazos</div>
+      <div onclick="setLibRutinaFilter('muscle','lower arms')" class="lib-rutina-filter" data-val="lower arms" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🦾 Antebrazos</div>
+      <div onclick="setLibRutinaFilter('muscle','upper legs')" class="lib-rutina-filter" data-val="upper legs" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🦵 Cuádriceps</div>
+      <div onclick="setLibRutinaFilter('muscle','lower legs')" class="lib-rutina-filter" data-val="lower legs" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🦶 Gemelos</div>
+      <div onclick="setLibRutinaFilter('muscle','waist')" class="lib-rutina-filter" data-val="waist" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🎯 Core/Abdomen</div>
+      <div onclick="setLibRutinaFilter('muscle','glutes')" class="lib-rutina-filter" data-val="glutes" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🍑 Glúteos</div>
+      <div onclick="setLibRutinaFilter('muscle','cardio')" class="lib-rutina-filter" data-val="cardio" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">❤️ Cardio</div>
     </div>
   </div>
   <div class="scroll">
