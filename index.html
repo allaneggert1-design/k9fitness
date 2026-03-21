@@ -2735,7 +2735,7 @@ let configEjercicioIdx=-1; // index in rutinaEjercicios being configured
 let allLibExercises=[];
 
 async function loadEntrenadorPanel(){
-  const {data:alumnos}=await supa.from('profiles').select('*').eq('role','alumno').eq('activo',true);
+  const {data:alumnos}=await supa.from('profiles').select('*').eq('role','alumno');
   const list=document.getElementById('alumnos-list');
   const countEl=document.getElementById('alumnos-count');
   if(countEl) countEl.textContent=(alumnos?.length||0)+' alumnos';
