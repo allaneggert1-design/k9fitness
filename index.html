@@ -269,8 +269,10 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
       <div class="chip" onclick="setLibFilter('muscle','shoulders',this)">Hombros</div>
       <div class="chip" onclick="setLibFilter('muscle','upper arms',this)">Brazos</div>
       <div class="chip" onclick="setLibFilter('muscle','upper legs',this)">Piernas</div>
-      <div class="chip" onclick="setLibFilter('muscle','waist',this)">Core</div>
+      <div class="chip" onclick="setLibFilter('muscle','lower legs',this)">Gemelos</div>
       <div class="chip" onclick="setLibFilter('muscle','glutes',this)">Glúteos</div>
+      <div class="chip" onclick="setLibFilter('muscle','waist',this)">Core / Abs</div>
+      <div class="chip" onclick="setLibFilter('muscle','cardio',this)">Cardio</div>
     </div>
   </div>
   <div class="scroll"><div class="lib-grid" id="lib-list"><div class="lib-loading" style="grid-column:span 2"><div class="lib-spinner"></div><span>Cargando...</span></div></div></div>
@@ -681,8 +683,9 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
       <div onclick="setLibRutinaFilter('shoulders')" class="lib-rutina-filter" data-val="shoulders" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Hombros</div>
       <div onclick="setLibRutinaFilter('upper arms')" class="lib-rutina-filter" data-val="upper arms" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Brazos</div>
       <div onclick="setLibRutinaFilter('upper legs')" class="lib-rutina-filter" data-val="upper legs" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Piernas</div>
-      <div onclick="setLibRutinaFilter('waist')" class="lib-rutina-filter" data-val="waist" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Core</div>
+      <div onclick="setLibRutinaFilter('lower legs')" class="lib-rutina-filter" data-val="lower legs" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Gemelos</div>
       <div onclick="setLibRutinaFilter('glutes')" class="lib-rutina-filter" data-val="glutes" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Glúteos</div>
+      <div onclick="setLibRutinaFilter('waist')" class="lib-rutina-filter" data-val="waist" style="flex-shrink:0;padding:6px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Core</div>
     </div>
   </div>
   <div class="scroll"><div style="padding:10px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px" id="lib-rutina-list"><div class="lib-loading" style="grid-column:span 2"><div class="lib-spinner"></div><span>Cargando...</span></div></div></div>
@@ -720,6 +723,26 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
 const SUPA_URL='https://akwcqrwwksuctxfawlco.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrd2Nxcnd3a3N1Y3R4ZmF3bGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMzA5NzIsImV4cCI6MjA4OTYwNjk3Mn0.CNHoywf9lB26TySTpiUh7JW-HQE2f7OnTLqSJ_D5ZLk';
 const CDN='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/';
+// Muscle group filter — maps chips to API categories & primaryMuscles values
+const MUSCLE_MAP={
+  'chest':    ['chest','pectorals','pectoralis'],
+  'back':     ['back','lats','traps','rhomboids','erector spinae','upper back','latissimus dorsi','teres major'],
+  'shoulders':['shoulders','deltoids','anterior deltoid','posterior deltoid','lateral deltoid','front deltoids'],
+  'upper arms':['upper arms','biceps','triceps','brachialis','brachioradialis'],
+  'upper legs':['upper legs','quadriceps','hamstrings','adductors','abductors','quads','hip flexors','thighs'],
+  'lower legs':['lower legs','calves','gastrocnemius','soleus','tibialis anterior'],
+  'waist':    ['waist','core','abs','abdominals','obliques','transverse abdominis','rectus abdominis'],
+  'glutes':   ['glutes','gluteus maximus','gluteus medius','gluteus minimus','hip'],
+  'cardio':   ['cardio','cardiovascular'],
+};
+function matchMuscleFilter(e,filter){
+  const keys=MUSCLE_MAP[filter]||[filter];
+  const cat=(e.category||'').toLowerCase();
+  const muscles=(e.primaryMuscles||[]).map(m=>m.toLowerCase());
+  const secondary=(e.secondaryMuscles||[]).map(m=>m.toLowerCase());
+  return keys.some(k=>cat.includes(k)||muscles.some(m=>m.includes(k))||secondary.some(m=>m.includes(k)));
+}
+
 
 const EX_TRANSLATIONS={
   "Barbell Bench Press":"Press de banca con barra",
@@ -1264,7 +1287,7 @@ function renderLib(){
   const el=document.getElementById('lib-list');
   let exs=allLibExercises;
   if(libFilter.muscle&&libFilter.muscle!=='all')
-    exs=exs.filter(e=>(e.category||'').toLowerCase()===libFilter.muscle||(e.primaryMuscles||[]).some(m=>m.toLowerCase().includes(libFilter.muscle)));
+    exs=exs.filter(e=>matchMuscleFilter(e,libFilter.muscle));
   if(libFilter.search)
     exs=exs.filter(e=>(e.name||'').toLowerCase().includes(libFilter.search));
   const showing=exs.slice(0,80);
@@ -2222,7 +2245,7 @@ function filterBibliotecaRutina(){
 function renderLibRutina(){
   const el=document.getElementById('lib-rutina-list');
   let exs=allLibExercises;
-  if(libRutinaFilter.muscle)exs=exs.filter(e=>(e.category||'').toLowerCase().includes(libRutinaFilter.muscle)||(e.primaryMuscles||[]).some(m=>m.toLowerCase().includes(libRutinaFilter.muscle)));
+  if(libRutinaFilter.muscle)exs=exs.filter(e=>matchMuscleFilter(e,libRutinaFilter.muscle));
   if(libRutinaFilter.search)exs=exs.filter(e=>(e.name||'').toLowerCase().includes(libRutinaFilter.search));
   const showing=exs.slice(0,80);
   if(!showing.length){el.innerHTML='<div style="grid-column:span 2;padding:40px;text-align:center;color:var(--muted)">Sin resultados</div>';return;}
