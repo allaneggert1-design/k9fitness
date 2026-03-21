@@ -2282,8 +2282,8 @@ function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classLis
 function goBack(to){goScreen(to);}
 function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
-  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',comunidad:'s-comunidad',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion',fases:'s-fases',calendario:'s-calendario'};
-  goScreen(m[tab]);
+  const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',comunidad:'s-comunidad',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion',fases:'s-fases',calendario:'s-calendario',templates:'s-templates'};
+  goScreen(m[tab]||'s-inicio');
   if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();loadMuscleMap();},100);
   if(tab==='perfil') loadPerfil();
   if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
@@ -2294,6 +2294,7 @@ function navTo(tab){
   if(tab==='inicio') loadFeedPreview();
   if(tab==='fases') loadFases();
   if(tab==='calendario') openCalendario(currentUser?.email, currentProfile?.full_name);
+  if(tab==='templates') loadTemplates();
 }
 
 function loadPerfil(){
@@ -2722,165 +2723,500 @@ async function supaLogout(){
   goScreen('s-login');
 }
 
-// ─── TRAINER PANEL ────────────────────────────────────────────────────────────
-let selectedAlumnoEmail='';
+// ─── TRAINER PANEL (NEW) ──────────────────────────────────────────────────────
+let currentAlumnoEmail='';
+let currentAlumnoNombre='';
 let ejercicioCount=0;
+let selectedDia='Lunes';
+let rutinaEjercicios=[]; // [{name,muscle,img,series,reps,descanso,peso,obs}]
+let libRutinaFilter={muscle:'',search:''};
+let libRutinaSelected=new Set();
+let configEjercicioIdx=-1; // index in rutinaEjercicios being configured
+let allLibExercises=[];
 
 async function loadEntrenadorPanel(){
-  const list=document.getElementById('alumnos-list');
-  if(!list)return;
   const {data:alumnos}=await supa.from('profiles').select('*').eq('role','alumno').eq('activo',true);
+  const list=document.getElementById('alumnos-list');
+  const countEl=document.getElementById('alumnos-count');
+  if(countEl) countEl.textContent=(alumnos?.length||0)+' alumnos';
   if(!alumnos||!alumnos.length){
-    list.innerHTML='<div class="empty-state">No hay alumnos registrados aún.<br>Cuando se registren aparecerán aquí.</div>';
+    list.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">👥</div>No hay alumnos registrados aún.</div>';
     return;
   }
-  list.innerHTML=alumnos.map(a=>`
-    <div style="background:var(--card);border-radius:14px;padding:16px;margin:0 20px 10px;border:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">${(a.full_name||'?')[0].toUpperCase()}</div>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:15px">${a.full_name||'Sin nombre'}</div>
-          <div style="font-size:12px;color:var(--muted)">${a.email}</div>
-        </div>
-        <div style="background:var(--green-glow);color:var(--green-light);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid rgba(91,168,50,.2)">${a.plan||'básico'}</div>
+  list.innerHTML=alumnos.map(a=>{
+    const initials=(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const plan=(a.plan||'basico').charAt(0).toUpperCase()+(a.plan||'basico').slice(1);
+    return `<div onclick="openAlumnoDetail('${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}','${plan}')" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;active:background:var(--card2)">
+      <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#fff;flex-shrink:0">${initials}</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:600">${a.full_name||a.email}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.email}</div>
       </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="openCrearRutina('${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="flex:1;background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+ Crear rutina</button>
-        <button onclick="verRutinas('${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}','${a.id}')" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">Ver rutinas</button>
-        <button onclick="enviarMensaje('${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}' )" style="background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:18px;cursor:pointer">💬</button>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="background:var(--green-glow);color:var(--green-light);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid rgba(91,168,50,.2)">${plan}</div>
+        <div style="font-size:18px;color:var(--muted)">›</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openAlumnoDetail(email, nombre, plan){
+  currentAlumnoEmail=email;
+  currentAlumnoNombre=nombre;
+  // Update header
+  const initials=nombre.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('alumno-detail-title').textContent=nombre.split(' ')[0];
+  document.getElementById('alumno-detail-av').textContent=initials;
+  document.getElementById('alumno-detail-name').textContent=nombre;
+  document.getElementById('alumno-detail-email').textContent=email;
+  document.getElementById('alumno-detail-plan').textContent='Plan '+plan+' · Alumno activo';
+  goScreen('s-alumno-detail');
+  loadAlumnoWeeklyPlan(email);
+}
+
+async function loadAlumnoWeeklyPlan(email){
+  const el=document.getElementById('alumno-weekly-plan');
+  if(!el)return;
+  const {data}=await supa.from('rutinas').select('*').eq('alumno_email',email).order('orden');
+  const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const byDia={};
+  (data||[]).forEach(r=>{
+    if(!byDia[r.dia])byDia[r.dia]=[];
+    byDia[r.dia].push(r);
+  });
+  el.innerHTML=DIAS.map(dia=>{
+    const exs=byDia[dia]||[];
+    const nombres=[...new Set(exs.map(r=>r.nombre_rutina))];
+    const hasRutina=exs.length>0;
+    return `<div style="background:var(--card);border-radius:14px;border:1px solid ${hasRutina?'var(--green)':'var(--border)'};padding:14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${hasRutina?'10':'0'}px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:10px;background:${hasRutina?'var(--green-glow)':'var(--card2)'};border:1px solid ${hasRutina?'rgba(91,168,50,.3)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:${hasRutina?'var(--green-light)':'var(--muted)'}">${dia.slice(0,3).toUpperCase()}</div>
+          <div>
+            <div style="font-weight:600;font-size:14px">${dia}</div>
+            ${nombres.length?`<div style="font-size:11px;color:var(--green-light)">${nombres.join(', ')}</div>`:`<div style="font-size:11px;color:var(--muted2)">Sin entrenamiento</div>`}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="openCrearRutina('${email}','${nombre.replace(/'/g,"\\'")}','${dia}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif">+ Agregar</button>
+          ${hasRutina?`<button onclick="deleteRutinasDia('${email}','${dia}')" style="background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'Barlow',sans-serif">🗑</button>`:''}
+        </div>
+      </div>
+      ${hasRutina?`<div style="display:flex;flex-wrap:wrap;gap:5px">${exs.slice(0,5).map(e=>`<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">${e.ejercicio_nombre}</div>`).join('')}${exs.length>5?`<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">+${exs.length-5} más</div>`:''}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function deleteRutinasDia(email, dia){
+  if(!confirm(`¿Eliminar todos los ejercicios del ${dia} para este alumno?`))return;
+  await supa.from('rutinas').delete().eq('alumno_email',email).eq('dia',dia);
+  showToast(`✓ Rutina del ${dia} eliminada`);
+  loadAlumnoWeeklyPlan(email);
+}
+
+function openCrearRutina(email, nombre, diaPreset){
+  currentAlumnoEmail=email||currentAlumnoEmail;
+  currentAlumnoNombre=nombre||currentAlumnoNombre;
+  rutinaEjercicios=[];
+  ejercicioCount=0;
+  selectedDia=diaPreset||'Lunes';
+  const info=document.getElementById('rutina-alumno-info');
+  if(info) info.innerHTML='<span style="font-size:18px">👤</span><span>Para: <b>'+currentAlumnoNombre+'</b></span>';
+  document.getElementById('r-nombre').value=diaPreset?getDiaDefaultName(diaPreset):'';
+  document.getElementById('r-nota').value='';
+  // Update dia selector
+  document.querySelectorAll('.dia-btn').forEach(b=>{
+    const isActive=b.dataset.dia===selectedDia;
+    b.style.background=isActive?'var(--green)':'var(--card)';
+    b.style.color=isActive?'#fff':'var(--muted)';
+    b.style.border=isActive?'none':'1px solid var(--border)';
+  });
+  renderEjerciciosSeleccionados();
+  goScreen('s-crear-rutina');
+}
+
+function getDiaDefaultName(dia){
+  const defaults={Lunes:'Pecho y Tríceps 💪',Martes:'Espalda y Bíceps 🏋️',Miércoles:'Piernas y Glúteos 🦵',Jueves:'Hombros y Core 🎯',Viernes:'Full Body 🔥',Sábado:'Cardio y Funcional ⚡',Domingo:'Descanso activo 🧘'};
+  return defaults[dia]||'';
+}
+
+function selectDia(el, dia){
+  selectedDia=dia;
+  document.querySelectorAll('.dia-btn').forEach(b=>{
+    const isActive=b.dataset.dia===dia;
+    b.style.background=isActive?'var(--green)':'var(--card)';
+    b.style.color=isActive?'#fff':'var(--muted)';
+    b.style.border=isActive?'none':'1px solid var(--border)';
+  });
+  // Auto-fill name if empty
+  const nameEl=document.getElementById('r-nombre');
+  if(nameEl&&!nameEl.value) nameEl.value=getDiaDefaultName(dia);
+}
+
+function renderEjerciciosSeleccionados(){
+  const el=document.getElementById('ejercicios-seleccionados');
+  const badge=document.getElementById('ex-count-badge');
+  if(!el)return;
+  if(badge){badge.style.display=rutinaEjercicios.length>0?'block':'none';badge.textContent=rutinaEjercicios.length;}
+  if(!rutinaEjercicios.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0 12px">Ningún ejercicio agregado aún. Usa la biblioteca para añadir.</div>';
+    return;
+  }
+  el.innerHTML=rutinaEjercicios.map((ex,i)=>`
+    <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:12px;align-items:center" id="rutina-ex-${i}">
+      ${ex.img?`<img src="${ex.img}" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:52px;height:52px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏋️</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
+        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+          <span style="background:var(--card2);border-radius:6px;padding:2px 8px;font-size:11px">${ex.series||3} series</span>
+          <span style="background:var(--card2);border-radius:6px;padding:2px 8px;font-size:11px">${ex.reps||10} reps</span>
+          <span style="background:var(--card2);border-radius:6px;padding:2px 8px;font-size:11px">⏱ ${ex.descanso||'60s'}</span>
+          ${ex.peso?`<span style="background:var(--green-glow);color:var(--green-light);border-radius:6px;padding:2px 8px;font-size:11px">${ex.peso}kg</span>`:''}
+        </div>
+        ${ex.obs?`<div style="font-size:11px;color:var(--green-light);margin-top:4px">💬 ${ex.obs}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <button onclick="editEjercicioConfig(${i})" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--text)">✏️</button>
+        <button onclick="removeEjercicio(${i})" style="background:none;border:1px solid rgba(231,76,60,.2);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;color:#e74c3c">✕</button>
       </div>
     </div>`).join('');
 }
 
-function openCrearRutina(email, nombre){
-  selectedAlumnoEmail=email;
-  ejercicioCount=0;
-  document.getElementById('rutina-alumno-info').textContent='Alumno: '+nombre+' ('+email+')';
-  document.getElementById('r-nombre').value='';
-  document.getElementById('r-nota').value='';
-  document.getElementById('ejercicios-form').innerHTML='';
-  addEjercicioForm();
+function removeEjercicio(i){
+  rutinaEjercicios.splice(i,1);
+  renderEjerciciosSeleccionados();
+}
+
+function editEjercicioConfig(i){
+  configEjercicioIdx=i;
+  const ex=rutinaEjercicios[i];
+  document.getElementById('config-ex-name').textContent=ex.name;
+  document.getElementById('config-ex-muscle').textContent=ex.muscle||'';
+  const img=document.getElementById('config-ex-img');
+  if(ex.img){img.src=ex.img;img.style.display='block';}
+  else img.style.display='none';
+  document.getElementById('config-series').value=ex.series||3;
+  document.getElementById('config-reps').value=ex.reps||10;
+  document.getElementById('config-descanso').value=ex.descanso||'60s';
+  document.getElementById('config-peso').value=ex.peso||'';
+  document.getElementById('config-obs').value=ex.obs||'';
+  goScreen('s-config-ejercicio');
+}
+
+function saveEjercicioConfig(){
+  if(configEjercicioIdx<0||configEjercicioIdx>=rutinaEjercicios.length){goScreen('s-crear-rutina');return;}
+  rutinaEjercicios[configEjercicioIdx].series=parseInt(document.getElementById('config-series').value)||3;
+  rutinaEjercicios[configEjercicioIdx].reps=document.getElementById('config-reps').value||'10';
+  rutinaEjercicios[configEjercicioIdx].descanso=document.getElementById('config-descanso').value||'60s';
+  rutinaEjercicios[configEjercicioIdx].peso=parseFloat(document.getElementById('config-peso').value)||null;
+  rutinaEjercicios[configEjercicioIdx].obs=document.getElementById('config-obs').value.trim()||null;
+  configEjercicioIdx=-1;
+  renderEjerciciosSeleccionados();
   goScreen('s-crear-rutina');
 }
 
-function addEjercicioForm(supersetGroup=null){
-  ejercicioCount++;
-  const n=ejercicioCount;
-  const isSuperset=supersetGroup!==null;
-  const div=document.createElement('div');
-  div.id='ej-'+n;
-  div.dataset.supersetGroup=supersetGroup||'';
-  div.style.cssText=`background:var(--card);border-radius:14px;padding:16px;border:1px solid ${isSuperset?'rgba(243,156,18,.4)':'var(--border)'};margin-bottom:${isSuperset?'4':'10'}px;position:relative${isSuperset?';margin-left:12px':''}`;
-  div.innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:8px">
-        ${isSuperset?`<span style="background:rgba(243,156,18,.15);color:#f39c12;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid rgba(243,156,18,.3)">SS ${supersetGroup}</span>`:''}
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;color:${isSuperset?'#f39c12':'var(--green-light)'}">Ejercicio ${n}</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        ${n>1?`<button onclick="addEjercicioForm(${supersetGroup!==null?supersetGroup:n})" style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);border-radius:8px;padding:4px 10px;color:#f39c12;font-size:11px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif">+SS</button>`:''}
-        ${n>1?`<button onclick="document.getElementById('ej-${n}').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>`:''}
-      </div>
-    </div>
-    ${isSuperset?`<div style="font-size:11px;color:#f39c12;margin-bottom:10px;opacity:.7">⚡ Sin descanso antes de este ejercicio</div>`:''}
-    <div style="display:grid;gap:10px">
-      <input class="input-field" id="ej-${n}-nombre" placeholder="Nombre del ejercicio">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <input class="input-field" id="ej-${n}-series" type="number" placeholder="Series (ej: 4)">
-        <input class="input-field" id="ej-${n}-reps" placeholder="Reps (ej: 10)">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <input class="input-field" id="ej-${n}-descanso" placeholder="${isSuperset?'Desc. después del SS':'Descanso (ej: 60s)'}">
-        <input class="input-field" id="ej-${n}-peso" type="number" placeholder="Peso kg">
-      </div>
-      <input class="input-field" id="ej-${n}-obs" placeholder="Observaciones (opcional)">
-    </div>`;
-  document.getElementById('ejercicios-form').appendChild(div);
+function appendObs(text){
+  const el=document.getElementById('config-obs');
+  if(el) el.value=(el.value?el.value+'. ':'')+text;
+}
+
+function addEjercicioManual(){
+  rutinaEjercicios.push({name:'Ejercicio personalizado',muscle:'',img:'',series:3,reps:'10',descanso:'60s',peso:null,obs:''});
+  configEjercicioIdx=rutinaEjercicios.length-1;
+  const ex=rutinaEjercicios[configEjercicioIdx];
+  document.getElementById('config-ex-name').textContent=ex.name;
+  document.getElementById('config-ex-muscle').textContent='';
+  document.getElementById('config-ex-img').style.display='none';
+  document.getElementById('config-series').value=3;
+  document.getElementById('config-reps').value=10;
+  document.getElementById('config-descanso').value='60s';
+  document.getElementById('config-peso').value='';
+  document.getElementById('config-obs').value='';
+  // Allow name editing
+  const nameEl=document.getElementById('config-ex-name');
+  nameEl.contentEditable='true';
+  nameEl.style.border='1px solid var(--green)';
+  nameEl.style.borderRadius='8px';
+  nameEl.style.padding='4px 8px';
+  goScreen('s-config-ejercicio');
 }
 
 async function saveRutina(){
-  if(!selectedAlumnoEmail){showToast('⚠️ Selecciona un alumno','error');return;}
+  if(!currentAlumnoEmail){showToast('⚠️ Selecciona un alumno','error');return;}
   const nombre=document.getElementById('r-nombre').value.trim();
-  const dia=document.getElementById('r-dia').value;
   const nota=document.getElementById('r-nota').value.trim();
-  if(!nombre){showToast('⚠️ Escribe el nombre de la rutina','error');return;}
-  const rows=[];
-  for(let i=1;i<=ejercicioCount;i++){
-    const el=document.getElementById('ej-'+i);
-    if(!el)continue;
-    const ejNombre=document.getElementById('ej-'+i+'-nombre')?.value.trim();
-    if(!ejNombre)continue;
-    const ssGroup=el.dataset.supersetGroup||null;
-    const ssPrefix=ssGroup?`[SS${ssGroup}] `:'';
-    rows.push({
-      alumno_email:selectedAlumnoEmail,
-      nombre_rutina:nombre,
-      dia,
-      ejercicio_nombre:ejNombre,
-      series:parseInt(document.getElementById('ej-'+i+'-series')?.value)||null,
-      reps:document.getElementById('ej-'+i+'-reps')?.value||null,
-      descanso:document.getElementById('ej-'+i+'-descanso')?.value||null,
-      peso_kg:parseFloat(document.getElementById('ej-'+i+'-peso')?.value)||null,
-      observaciones:ssPrefix+(document.getElementById('ej-'+i+'-obs')?.value||nota||''),
-      orden:i
-    });
-  }
-  if(!rows.length){showToast('⚠️ Agrega al menos un ejercicio','error');return;}
+  if(!nombre){showToast('⚠️ Escribe el título del entrenamiento','error');return;}
+  if(!rutinaEjercicios.length){showToast('⚠️ Agrega al menos un ejercicio','error');return;}
+  const rows=rutinaEjercicios.map((ex,i)=>({
+    alumno_email:currentAlumnoEmail,
+    nombre_rutina:nombre,
+    dia:selectedDia,
+    ejercicio_nombre:ex.name,
+    series:ex.series||3,
+    reps:String(ex.reps||'10'),
+    descanso:ex.descanso||'60s',
+    peso_kg:ex.peso||null,
+    observaciones:(ex.obs||nota||'').trim()||null,
+    orden:i+1
+  }));
+  const btn=document.getElementById('btn-save-rutina')||document.querySelector('[onclick="saveRutina()"]');
+  if(btn) btn.textContent='Guardando...';
   const {error}=await supa.from('rutinas').insert(rows);
-  if(error){showToast('⚠️ Error: '+error.message,'error');return;}
-  showToast('✓ Rutina "'+nombre+'" guardada para '+rows.length+' ejercicios');
+  if(error){showToast('⚠️ Error: '+error.message,'error');if(btn)btn.textContent='Guardar';return;}
+  showToast('✓ Rutina "'+nombre+'" guardada para '+currentAlumnoNombre+' 💪');
+  goScreen('s-alumno-detail');
+  loadAlumnoWeeklyPlan(currentAlumnoEmail);
+}
+
+// ─── BIBLIOTECA PARA RUTINA ───────────────────────────────────────────────────
+const CDN='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/';
+
+async function openBibliotecaParaRutina(){
+  goScreen('s-biblioteca-rutina');
+  libRutinaSelected=new Set();
+  libRutinaFilter={muscle:'',search:''};
+  updateLibRutinaSelectedCount();
+  if(!allLibExercises.length){
+    document.getElementById('lib-rutina-list').innerHTML='<div class="lib-loading" style="grid-column:span 2"><div class="lib-spinner"></div><span>Cargando biblioteca...</span></div>';
+    try{
+      const r=await fetch(CDN+'dist/exercises.json');
+      allLibExercises=await r.json();
+    }catch(e){
+      document.getElementById('lib-rutina-list').innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;grid-column:span 2">Error al cargar la biblioteca</div>';
+      return;
+    }
+  }
+  renderLibRutina();
+}
+
+function setLibRutinaFilter(type,val){
+  libRutinaFilter[type]=val;
+  document.querySelectorAll('.lib-rutina-filter').forEach(b=>{
+    const isActive=(type==='muscle'&&b.textContent.trim()===(val===''?'Todos':b.textContent.trim())&&(val===''||(b.getAttribute('onclick')||'').includes(val)));
+    if(type==='muscle'){
+      const btnVal=(b.getAttribute('onclick')||'').match(/'([^']*)'\)$/)?.[1]||'';
+      const active=btnVal===val;
+      b.style.background=active?'var(--green)':'var(--card)';
+      b.style.color=active?'#fff':'var(--muted)';
+      b.style.border=active?'none':'1px solid var(--border)';
+    }
+  });
+  renderLibRutina();
+}
+
+function filterBibliotecaRutina(){
+  libRutinaFilter.search=document.getElementById('lib-rutina-search').value.toLowerCase();
+  renderLibRutina();
+}
+
+function renderLibRutina(){
+  const el=document.getElementById('lib-rutina-list');
+  if(!el)return;
+  let exs=allLibExercises;
+  if(libRutinaFilter.muscle) exs=exs.filter(e=>(e.bodyPart||'').toLowerCase().includes(libRutinaFilter.muscle)||(e.target||'').toLowerCase().includes(libRutinaFilter.muscle)||(e.secondaryMuscles||[]).some(m=>m.toLowerCase().includes(libRutinaFilter.muscle)));
+  if(libRutinaFilter.search) exs=exs.filter(e=>(e.name||'').toLowerCase().includes(libRutinaFilter.search)||(e.bodyPart||'').toLowerCase().includes(libRutinaFilter.search));
+  exs=exs.slice(0,60);
+  el.innerHTML=exs.map(ex=>{
+    const isSelected=libRutinaSelected.has(ex.id||ex.name);
+    const imgUrl=ex.gifUrl||((ex.images||[])[0]?CDN+'exercises/'+ex.images[0]:'');
+    return `<div onclick="toggleLibRutinaSelect('${(ex.id||ex.name).replace(/'/g,"\\'")}','${(ex.name||'').replace(/'/g,"\\'").replace(/"/g,'\\"')}','${(ex.bodyPart||'').replace(/'/g,"\\'")}','${imgUrl.replace(/'/g,"\\'")}','${(ex.target||'').replace(/'/g,"\\'")}' )" style="background:var(--card);border:2px solid ${isSelected?'var(--green)':'var(--border)'};border-radius:14px;overflow:hidden;cursor:pointer;position:relative" id="lib-rutina-ex-${(ex.id||ex.name).replace(/[^a-z0-9]/gi,'')}">
+      ${isSelected?'<div style="position:absolute;top:6px;right:6px;background:var(--green);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:1">✓</div>':''}
+      ${imgUrl?`<img src="${imgUrl}" style="width:100%;height:100px;object-fit:cover" loading="lazy" onerror="this.style.display='none'">`:'<div style="width:100%;height:100px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:32px">🏋️</div>'}
+      <div style="padding:8px 10px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;line-height:1.2;margin-bottom:3px">${ex.name}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:capitalize">${ex.bodyPart||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLibRutinaSelect(id,name,muscle,img,target){
+  if(libRutinaSelected.has(id)) libRutinaSelected.delete(id);
+  else libRutinaSelected.add(id);
+  updateLibRutinaSelectedCount();
+  // Re-render just the card border
+  const card=document.getElementById('lib-rutina-ex-'+id.replace(/[^a-z0-9]/gi,''));
+  if(card){
+    const isNowSelected=libRutinaSelected.has(id);
+    card.style.borderColor=isNowSelected?'var(--green)':'var(--border)';
+    const check=card.querySelector('[style*="border-radius:50%"]');
+    if(isNowSelected&&!check){
+      const dot=document.createElement('div');
+      dot.style.cssText='position:absolute;top:6px;right:6px;background:var(--green);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:1';
+      dot.textContent='✓';
+      card.appendChild(dot);
+    } else if(!isNowSelected&&check){
+      check.remove();
+    }
+  }
+  // Store metadata for selected
+  if(!window._libRutinaData) window._libRutinaData={};
+  window._libRutinaData[id]={name,muscle:muscle||target,img};
+}
+
+function updateLibRutinaSelectedCount(){
+  const el=document.getElementById('lib-rutina-selected-count');
+  if(el){
+    el.style.display=libRutinaSelected.size>0?'block':'none';
+    el.textContent=libRutinaSelected.size+' seleccionados';
+  }
+}
+
+function confirmLibRutinaSelection(){
+  if(!libRutinaSelected.size){showToast('Selecciona al menos un ejercicio');return;}
+  libRutinaSelected.forEach(id=>{
+    const data=(window._libRutinaData||{})[id]||{};
+    // Check not already added
+    if(!rutinaEjercicios.find(e=>e.id===id)){
+      rutinaEjercicios.push({id,name:data.name||id,muscle:data.muscle||'',img:data.img||'',series:3,reps:'10',descanso:'60s',peso:null,obs:''});
+    }
+  });
+  renderEjerciciosSeleccionados();
+  goScreen('s-crear-rutina');
+  showToast('✓ '+libRutinaSelected.size+' ejercicios agregados');
+}
+
+// ─── TEMPLATES ────────────────────────────────────────────────────────────────
+const WORKOUT_TEMPLATES=[
+  {id:'pecho_triceps',name:'Pecho y Tríceps',emoji:'💪',color:'#e74c3c',dia:'Lunes',ejercicios:[
+    {name:'Bench Press',muscle:'chest',series:4,reps:'8-10',descanso:'90s',obs:'Baja controlado hasta el pecho'},
+    {name:'Incline Dumbbell Press',muscle:'chest',series:3,reps:'10-12',descanso:'60s',obs:''},
+    {name:'Cable Fly',muscle:'chest',series:3,reps:'12-15',descanso:'60s',obs:'Siente el estiramiento'},
+    {name:'Triceps Pushdown',muscle:'upper arms',series:3,reps:'12',descanso:'60s',obs:''},
+    {name:'Overhead Tricep Extension',muscle:'upper arms',series:3,reps:'12',descanso:'60s',obs:''},
+  ]},
+  {id:'espalda_biceps',name:'Espalda y Bíceps',emoji:'🏋️',color:'#3498db',dia:'Martes',ejercicios:[
+    {name:'Pull Up',muscle:'back',series:4,reps:'6-8',descanso:'90s',obs:'Agarre prono, amplitud completa'},
+    {name:'Barbell Row',muscle:'back',series:4,reps:'8-10',descanso:'90s',obs:'Espalda recta'},
+    {name:'Lat Pulldown',muscle:'back',series:3,reps:'10-12',descanso:'60s',obs:''},
+    {name:'Barbell Curl',muscle:'upper arms',series:3,reps:'10-12',descanso:'60s',obs:''},
+    {name:'Hammer Curl',muscle:'upper arms',series:3,reps:'12',descanso:'60s',obs:''},
+  ]},
+  {id:'piernas',name:'Piernas y Glúteos',emoji:'🦵',color:'#9b59b6',dia:'Miércoles',ejercicios:[
+    {name:'Squat',muscle:'upper legs',series:4,reps:'8-10',descanso:'120s',obs:'Rodillas alineadas con los pies'},
+    {name:'Romanian Deadlift',muscle:'upper legs',series:4,reps:'10',descanso:'90s',obs:'Siente los isquios'},
+    {name:'Leg Press',muscle:'upper legs',series:3,reps:'12-15',descanso:'90s',obs:''},
+    {name:'Leg Curl',muscle:'upper legs',series:3,reps:'12',descanso:'60s',obs:''},
+    {name:'Calf Raise',muscle:'lower legs',series:4,reps:'15-20',descanso:'45s',obs:''},
+  ]},
+  {id:'hombros_core',name:'Hombros y Core',emoji:'🎯',color:'#f39c12',dia:'Jueves',ejercicios:[
+    {name:'Overhead Press',muscle:'shoulders',series:4,reps:'8-10',descanso:'90s',obs:''},
+    {name:'Lateral Raise',muscle:'shoulders',series:4,reps:'12-15',descanso:'60s',obs:'Codos ligeramente flexionados'},
+    {name:'Front Raise',muscle:'shoulders',series:3,reps:'12',descanso:'60s',obs:''},
+    {name:'Plank',muscle:'waist',series:3,reps:'45s',descanso:'45s',obs:'Core apretado'},
+    {name:'Russian Twist',muscle:'waist',series:3,reps:'20',descanso:'45s',obs:''},
+  ]},
+  {id:'full_body',name:'Full Body',emoji:'🔥',color:'var(--green)',dia:'Viernes',ejercicios:[
+    {name:'Deadlift',muscle:'back',series:3,reps:'5',descanso:'120s',obs:'Técnica perfecta siempre'},
+    {name:'Bench Press',muscle:'chest',series:3,reps:'8',descanso:'90s',obs:''},
+    {name:'Squat',muscle:'upper legs',series:3,reps:'8',descanso:'90s',obs:''},
+    {name:'Pull Up',muscle:'back',series:3,reps:'6-8',descanso:'90s',obs:''},
+    {name:'Overhead Press',muscle:'shoulders',series:3,reps:'8',descanso:'90s',obs:''},
+  ]},
+  {id:'cardio',name:'Cardio y Funcional',emoji:'⚡',color:'#2ecc71',dia:'Sábado',ejercicios:[
+    {name:'Jumping Jack',muscle:'cardio',series:3,reps:'30',descanso:'30s',obs:''},
+    {name:'Burpee',muscle:'cardio',series:3,reps:'10',descanso:'60s',obs:''},
+    {name:'Mountain Climber',muscle:'waist',series:3,reps:'20',descanso:'45s',obs:''},
+    {name:'Box Jump',muscle:'upper legs',series:3,reps:'10',descanso:'60s',obs:''},
+    {name:'Battle Rope',muscle:'cardio',series:3,reps:'30s',descanso:'60s',obs:''},
+  ]},
+];
+
+function loadTemplates(){
+  const el=document.getElementById('templates-grid');
+  if(!el)return;
+  el.innerHTML=WORKOUT_TEMPLATES.map(t=>`
+    <div onclick="openTemplate('${t.id}')" style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="width:52px;height:52px;border-radius:14px;background:${t.color === 'var(--green)' ? 'var(--green-glow)' : 'rgba(0,0,0,.2)'};border:1px solid ${t.color === 'var(--green)' ? 'rgba(91,168,50,.3)' : 'rgba(255,255,255,.1)'};display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${t.emoji}</div>
+      <div style="flex:1">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.ejercicios.length} ejercicios · ${t.dia}</div>
+      </div>
+      <div style="font-size:20px;color:var(--muted)">›</div>
+    </div>`).join('');
+}
+
+function openTemplate(templateId){
+  const t=WORKOUT_TEMPLATES.find(x=>x.id===templateId);
+  if(!t)return;
+  const el=document.getElementById('apply-template-content');
+  const title=document.getElementById('apply-template-title');
+  if(title) title.textContent=t.emoji+' '+t.name;
+  if(!el)return;
+  el.innerHTML=`
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Revisa los ejercicios y selecciona el alumno al que quieres aplicar este template.</div>
+    <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:16px">
+      ${t.ejercicios.map((ex,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i<t.ejercicios.length-1?'border-bottom:1px solid var(--border)':''}">
+        <div style="width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${ex.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${ex.series} series × ${ex.reps} reps · ${ex.descanso}</div>
+          ${ex.obs?`<div style="font-size:11px;color:var(--green-light)">💬 ${ex.obs}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="sec-title">Aplicar a alumno</div>
+    <div id="template-alumnos-list"><div class="lib-loading"><div class="lib-spinner"></div></div></div>
+    <div style="height:20px"></div>`;
+  goScreen('s-apply-template');
+  // Load alumnos
+  supa.from('profiles').select('*').eq('role','alumno').eq('activo',true).then(({data:alumnos})=>{
+    const listEl=document.getElementById('template-alumnos-list');
+    if(!listEl)return;
+    if(!alumnos?.length){listEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay alumnos disponibles</div>';return;}
+    listEl.innerHTML=alumnos.map(a=>`
+      <button onclick="applyTemplateToAlumno('${templateId}','${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">${(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${a.full_name||a.email}</div>
+          <div style="font-size:11px;color:var(--muted)">${a.email}</div>
+        </div>
+        <div style="background:var(--green);color:#fff;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Aplicar</div>
+      </button>`).join('');
+  });
+}
+
+async function applyTemplateToAlumno(templateId, alumnoEmail, alumnoNombre){
+  const t=WORKOUT_TEMPLATES.find(x=>x.id===templateId);
+  if(!t)return;
+  if(!confirm('¿Aplicar "'+t.name+'" a '+alumnoNombre+' para el '+t.dia+'?'))return;
+  const rows=t.ejercicios.map((ex,i)=>({
+    alumno_email:alumnoEmail,
+    nombre_rutina:t.name,
+    dia:t.dia,
+    ejercicio_nombre:ex.name,
+    series:ex.series,
+    reps:String(ex.reps),
+    descanso:ex.descanso,
+    peso_kg:null,
+    observaciones:ex.obs||null,
+    orden:i+1
+  }));
+  const {error}=await supa.from('rutinas').insert(rows);
+  if(error){showToast('⚠️ Error al aplicar template','error');return;}
+  showToast('✓ Template "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
   goScreen('s-entrenador');
 }
 
-function addCircuitGroup(){
-  // Add 2 exercises with same superset group
-  const groupId=ejercicioCount+1;
-  // Show info toast
-  showToast('⚡ Supersérie — agrega 2+ ejercicios sin descanso entre ellos');
-  addEjercicioForm(groupId);
-  addEjercicioForm(groupId);
+function enviarMensaje(email,nombre){
+  activeChatWith={email,name:nombre};
+  const initials=(nombre||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('chat-av-header').textContent=initials;
+  document.getElementById('chat-name-header').textContent=nombre||email;
+  document.getElementById('chat-messages').innerHTML='<div class="lib-loading"><div class="lib-spinner"></div></div>';
+  goScreen('s-chat');
+  loadChatMessages();
+  if(chatPollInterval)clearInterval(chatPollInterval);
+  chatPollInterval=setInterval(loadChatMessages,5000);
 }
 
-async function verRutinas(email,nombre){
-  const {data}=await supa.from('rutinas').select('*').eq('alumno_email',email).order('dia').order('orden');
-  if(!data||!data.length){showToast(nombre+' no tiene rutinas aún');return;}
-  const dias=[...new Set(data.map(r=>r.dia))];
-  const html=dias.map(dia=>`
-    <div style="margin-bottom:16px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;color:var(--green-light);font-size:14px;margin-bottom:8px">${dia} — ${data.filter(r=>r.dia===dia)[0]?.nombre_rutina||''}</div>
-      ${data.filter(r=>r.dia===dia).map(r=>`
-        <div style="background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:13px">
-          <div style="font-weight:600;margin-bottom:4px">${r.ejercicio_nombre}</div>
-          <div style="color:var(--muted)">${r.series||'—'} series × ${r.reps||'—'} reps · ${r.descanso||'—'} desc · ${r.peso_kg?r.peso_kg+'kg':'BW'}</div>
-          ${r.observaciones?`<div style="color:var(--green-light);font-size:11px;margin-top:4px">💬 ${r.observaciones}</div>`:''}
-        </div>`).join('')}
-    </div>`).join('');
-  document.getElementById('rutina-alumno-info').textContent='Rutinas de: '+nombre;
-  document.getElementById('ejercicios-form').innerHTML=`<div style="padding:4px 0">${html}</div><div style="height:10px"></div>`;
-  document.getElementById('r-nombre').style.display='none';
-  document.getElementById('r-dia').style.display='none';
-  document.getElementById('r-nota').style.display='none';
-  document.querySelector('[onclick="addEjercicioForm()"]').style.display='none';
-  document.querySelector('[onclick="saveRutina()"]').textContent='← Volver';
-  document.querySelector('[onclick="saveRutina()"]').onclick=()=>{
-    document.getElementById('r-nombre').style.display='';
-    document.getElementById('r-dia').style.display='';
-    document.getElementById('r-nota').style.display='';
-    document.querySelector('[onclick*="addEjercicioForm"]').style.display='';
-    goScreen('s-entrenador');
-  };
-  goScreen('s-crear-rutina');
-}
 
-async function enviarMensaje(email, nombre){
-  const msg=prompt('Mensaje para '+nombre+':');
-  if(!msg)return;
-  const meName=(currentProfile?.full_name||'Entrenador');
-  const {error}=await supa.from('mensajes').insert({de_email:currentUser.email,de_nombre:meName,para_email:email,mensaje:msg});
-  if(error){showToast('⚠️ Error al enviar','error');return;}
-  showToast('✓ Mensaje enviado a '+nombre);
-}
 
+
+
+
+async 
+async 
 // ─── MODO RAPIDO ──────────────────────────────────────────────────────────────
 let qmExercicios=[];
 let qmExIdx=0;
@@ -3365,33 +3701,220 @@ init();
     <div class="hero-sub" id="entrenador-name-sub">Gestión de alumnos y rutinas</div>
   </div>
   <div class="scroll">
-    <div style="padding:14px 20px 8px;display:flex;justify-content:space-between;align-items:center">
+    <!-- Quick actions -->
+    <div style="padding:14px 20px 0;display:flex;gap:10px;margin-bottom:4px">
+      <button onclick="goScreen('s-templates')" style="flex:1;background:linear-gradient(135deg,rgba(243,156,18,.15),rgba(243,156,18,.05));border:1px solid rgba(243,156,18,.3);border-radius:14px;padding:14px;text-align:center;cursor:pointer">
+        <div style="font-size:24px;margin-bottom:4px">📋</div>
+        <div style="font-size:12px;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.5px">Treinos Padrão</div>
+      </button>
+      <button onclick="supaLogout()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;cursor:pointer;min-width:70px">
+        <div style="font-size:24px;margin-bottom:4px">🚪</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Salir</div>
+      </button>
+    </div>
+    <div style="padding:12px 20px 8px;display:flex;justify-content:space-between;align-items:center">
       <div class="sec-title" style="margin:0">Mis alumnos</div>
-      <button onclick="supaLogout()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px 12px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif">Cerrar sesión</button>
+      <div id="alumnos-count" style="font-size:12px;color:var(--muted)"></div>
     </div>
     <div id="alumnos-list"><div class="lib-loading"><div class="lib-spinner"></div><span>Cargando alumnos...</span></div></div>
   </div>
 </div>
 
-<!-- CREAR RUTINA -->
+<!-- ALUMNO DETAIL -->
+<div class="screen" id="s-alumno-detail">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-entrenador')">←</div>
+      <h1 id="alumno-detail-title">Alumno</h1>
+      <button onclick="openCrearRutina(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase">+ Rutina</button>
+    </div>
+  </div>
+  <div class="scroll">
+    <!-- Alumno header -->
+    <div style="padding:16px 20px 0">
+      <div id="alumno-detail-header" style="background:var(--card);border-radius:16px;padding:16px;border:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:14px">
+        <div id="alumno-detail-av" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#fff;flex-shrink:0">?</div>
+        <div style="flex:1">
+          <div id="alumno-detail-name" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase">—</div>
+          <div id="alumno-detail-email" style="font-size:12px;color:var(--muted)">—</div>
+          <div id="alumno-detail-plan" style="font-size:11px;color:var(--green-light);margin-top:2px">—</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+        <button onclick="openCrearRutina(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--green);border:none;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
+          <div style="font-size:20px;margin-bottom:3px">➕</div>
+          <div style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase">Rutina</div>
+        </button>
+        <button onclick="openCalendario(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
+          <div style="font-size:20px;margin-bottom:3px">📅</div>
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Calendario</div>
+        </button>
+        <button onclick="assignProgramToAlumno(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
+          <div style="font-size:20px;margin-bottom:3px">📋</div>
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Programa</div>
+        </button>
+        <button onclick="enviarMensaje(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
+          <div style="font-size:20px;margin-bottom:3px">💬</div>
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Mensaje</div>
+        </button>
+      </div>
+
+      <!-- Weekly plan -->
+      <div class="sec-title">Plan semanal</div>
+      <div id="alumno-weekly-plan" style="margin-bottom:16px">
+        <div class="lib-loading"><div class="lib-spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES -->
+<div class="screen" id="s-templates">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-entrenador')">←</div>
+      <h1>📋 <span>Treinos Padrão</span></h1>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px 20px 0">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Seleciona un template, personalízalo y aplícalo al alumno con un clic.</div>
+      <div id="templates-grid" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APLICAR TEMPLATE -->
+<div class="screen" id="s-apply-template">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-templates')">←</div>
+      <h1 id="apply-template-title">Template</h1>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px 20px 0" id="apply-template-content"></div>
+  </div>
+</div>
+
+<!-- CREAR RUTINA (nueva versión visual) -->
 <div class="screen" id="s-crear-rutina">
-  <div class="topbar"><div class="topbar-row"><div class="back-btn" id="crear-back-btn" onclick="goScreen('s-entrenador')">←</div><h1>Crear <span>Rutina</span></h1></div></div>
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" id="crear-back-btn" onclick="goScreen('s-alumno-detail')">←</div>
+      <h1>Crear <span>Rutina</span></h1>
+      <button onclick="saveRutina()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase">Guardar</button>
+    </div>
+  </div>
   <div class="scroll">
     <div style="padding:0 20px">
-      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:12px 14px;margin:16px 0;font-size:13px;color:var(--green-light)" id="rutina-alumno-info">Alumno: —</div>
-      <div class="input-group"><label class="input-label">Nombre de la rutina</label><input class="input-field" id="r-nombre" placeholder="Ej: Rutina A — Pecho y Tríceps"></div>
-      <div class="input-group"><label class="input-label">Día de la semana</label>
-        <select class="input-field" id="r-dia" style="cursor:pointer">
-          <option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
-        </select>
+      <!-- Alumno info -->
+      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:12px 14px;margin:14px 0;font-size:13px;color:var(--green-light);display:flex;align-items:center;gap:8px" id="rutina-alumno-info">
+        <span style="font-size:18px">👤</span><span>Alumno: —</span>
       </div>
-      <div class="sec-title" style="margin-bottom:12px">Ejercicios</div>
-      <div id="ejercicios-form"></div>
-      <button id="btn-add-ej" onclick="addEjercicioForm()" style="width:100%;background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:14px;color:var(--muted);font-size:14px;cursor:pointer;margin-bottom:8px;font-family:'Barlow',sans-serif">+ Agregar ejercicio</button>
-      <button onclick="addCircuitGroup()" style="width:100%;background:rgba(243,156,18,.06);border:1px dashed rgba(243,156,18,.4);border-radius:14px;padding:12px;color:#f39c12;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px;font-family:'Barlow',sans-serif">⚡ Agregar supersérie / circuito</button>
-      <div class="input-group"><label class="input-label">Nota general para el alumno</label><textarea class="input-field" id="r-nota" rows="3" placeholder="Consejos, motivación..." style="resize:none"></textarea></div>
-      <button class="btn-green" id="btn-save-rutina" onclick="saveRutina()">💾 Guardar rutina</button>
-      <div style="height:30px"></div>
+
+      <!-- Dia selector visual -->
+      <div class="sec-title">Día de la semana</div>
+      <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px" id="dia-selector">
+        <div onclick="selectDia(this,'Lunes')" class="dia-btn active" data-dia="Lunes" style="flex-shrink:0;padding:8px 14px;background:var(--green);color:#fff;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Lun</div>
+        <div onclick="selectDia(this,'Martes')" class="dia-btn" data-dia="Martes" style="flex-shrink:0;padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Mar</div>
+        <div onclick="selectDia(this,'Miércoles')" class="dia-btn" data-dia="Miércoles" style="flex-shrink:0;padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Mié</div>
+        <div onclick="selectDia(this,'Jueves')" class="dia-btn" data-dia="Jueves" style="flex-shrink:0;padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Jue</div>
+        <div onclick="selectDia(this,'Viernes')" class="dia-btn" data-dia="Viernes" style="flex-shrink:0;padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Vie</div>
+        <div onclick="selectDia(this,'Sábado')" class="dia-btn" data-dia="Sábado" style="flex-shrink:0;padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Sáb</div>
+        <div onclick="selectDia(this,'Domingo')" class="dia-btn" data-dia="Domingo" style="flex-shrink:0;padding:8px 14px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Dom</div>
+      </div>
+
+      <!-- Nombre rutina -->
+      <div class="input-group"><label class="input-label">Título del entrenamiento</label><input class="input-field" id="r-nombre" placeholder="Ej: Pecho y Tríceps 💪"></div>
+
+      <!-- Nota general -->
+      <div class="input-group"><label class="input-label">Mensaje para el alumno (opcional)</label><textarea class="input-field" id="r-nota" rows="2" placeholder="Ej: Enfócate en la técnica hoy..." style="resize:none"></textarea></div>
+
+      <!-- Ejercicios seleccionados -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="sec-title" style="margin:0">Ejercicios seleccionados</div>
+        <div id="ex-count-badge" style="background:var(--green);color:#fff;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;display:none">0</div>
+      </div>
+      <div id="ejercicios-seleccionados" style="margin-bottom:12px"></div>
+
+      <!-- Botón abrir biblioteca -->
+      <button onclick="openBibliotecaParaRutina()" style="width:100%;background:var(--card);border:2px dashed var(--green);border-radius:14px;padding:16px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="font-size:22px">📚</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;color:var(--green-light);letter-spacing:.5px">Agregar ejercicios de la biblioteca</span>
+      </button>
+      <button onclick="addEjercicioManual()" style="width:100%;background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:14px;cursor:pointer;margin-bottom:16px;font-family:'Barlow',sans-serif;color:var(--muted);font-size:13px">+ Agregar ejercicio manualmente</button>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BIBLIOTECA PARA RUTINA (selección visual) -->
+<div class="screen" id="s-biblioteca-rutina">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-crear-rutina')">←</div>
+      <h1>📚 <span>Elegir ejercicio</span></h1>
+      <div id="lib-rutina-selected-count" style="background:var(--green);color:#fff;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;display:none">0</div>
+    </div>
+  </div>
+  <!-- Filtros -->
+  <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
+    <input id="lib-rutina-search" class="input-field" placeholder="🔍 Buscar ejercicio..." style="margin:0;padding:10px 14px;font-size:14px" oninput="filterBibliotecaRutina()">
+    <div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px" id="lib-rutina-muscle-filters">
+      <div onclick="setLibRutinaFilter('muscle','')" class="lib-rutina-filter active-filter" style="flex-shrink:0;padding:5px 12px;background:var(--green);color:#fff;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Todos</div>
+      <div onclick="setLibRutinaFilter('muscle','chest')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Pecho</div>
+      <div onclick="setLibRutinaFilter('muscle','back')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Espalda</div>
+      <div onclick="setLibRutinaFilter('muscle','shoulders')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Hombros</div>
+      <div onclick="setLibRutinaFilter('muscle','upper arms')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Brazos</div>
+      <div onclick="setLibRutinaFilter('muscle','upper legs')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Piernas</div>
+      <div onclick="setLibRutinaFilter('muscle','waist')" class="lib-rutina-filter" style="flex-shrink:0;padding:5px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Core</div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div id="lib-rutina-list" style="padding:10px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+  </div>
+  <div style="padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0">
+    <button onclick="confirmLibRutinaSelection()" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:14px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">✓ Confirmar selección</button>
+  </div>
+</div>
+
+<!-- CONFIGURAR EJERCICIO (series, reps, peso, comentario) -->
+<div class="screen" id="s-config-ejercicio">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-crear-rutina')">←</div>
+      <h1>Configurar <span>ejercicio</span></h1>
+      <button onclick="saveEjercicioConfig()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase">OK</button>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:16px 20px 0">
+      <!-- Exercise preview -->
+      <div style="background:var(--card);border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:20px">
+        <img id="config-ex-img" src="" alt="" style="width:100%;height:180px;object-fit:cover;display:none">
+        <div style="padding:14px">
+          <div id="config-ex-name" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;margin-bottom:4px"></div>
+          <div id="config-ex-muscle" style="font-size:12px;color:var(--muted)"></div>
+        </div>
+      </div>
+      <!-- Config fields -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="input-group" style="margin:0"><label class="input-label">Series</label><input class="input-field" type="number" id="config-series" placeholder="ej: 4" value="3"></div>
+        <div class="input-group" style="margin:0"><label class="input-label">Repeticiones</label><input class="input-field" id="config-reps" placeholder="ej: 10-12" value="10"></div>
+        <div class="input-group" style="margin:0"><label class="input-label">Descanso</label><input class="input-field" id="config-descanso" placeholder="ej: 60s" value="60s"></div>
+        <div class="input-group" style="margin:0"><label class="input-label">Peso sugerido (kg)</label><input class="input-field" type="number" id="config-peso" placeholder="opcional"></div>
+      </div>
+      <div class="input-group"><label class="input-label">Comentario para el alumno</label><textarea class="input-field" id="config-obs" rows="3" placeholder="Ej: Controla el descenso, 2 segundos..." style="resize:none"></textarea></div>
+      <!-- Quick tips -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+        <div onclick="appendObs('Controla el descenso lentamente')" style="background:var(--card2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border)">💡 Descenso lento</div>
+        <div onclick="appendObs('Enfócate en la conexión mente-músculo')" style="background:var(--card2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border)">💡 Mente-músculo</div>
+        <div onclick="appendObs('Mantén el core apretado')" style="background:var(--card2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border)">💡 Core apretado</div>
+        <div onclick="appendObs('Peso ligero, técnica perfecta')" style="background:var(--card2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border)">💡 Técnica perfecta</div>
+      </div>
     </div>
   </div>
 </div>
