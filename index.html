@@ -2735,12 +2735,24 @@ let configEjercicioIdx=-1; // index in rutinaEjercicios being configured
 let allLibExercises=[];
 
 async function loadEntrenadorPanel(){
-  const {data:alumnos}=await supa.from('profiles').select('*').eq('role','alumno');
+  const {data:alumnos, error}=await supa.from('profiles').select('*').eq('role','alumno');
   const list=document.getElementById('alumnos-list');
   const countEl=document.getElementById('alumnos-count');
+
+  // Debug: show error if any
+  if(error){
+    list.innerHTML=`<div style="padding:20px;color:#e74c3c;font-size:13px">⚠️ Error: ${error.message}<br><br>Verifica las políticas RLS en Supabase.</div>`;
+    return;
+  }
+
+  // Debug: show raw count
   if(countEl) countEl.textContent=(alumnos?.length||0)+' alumnos';
+
   if(!alumnos||!alumnos.length){
-    list.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">👥</div>No hay alumnos registrados aún.</div>';
+    // Try without role filter to debug
+    const {data:todos}=await supa.from('profiles').select('id,email,role');
+    const debugInfo=todos?.length?`Perfiles en BD: ${todos.length} (${todos.map(p=>p.role||'sin rol').join(', ')})`:'Sin perfiles en BD';
+    list.innerHTML=`<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">👥</div>No hay alumnos registrados aún.<br><br><div style="font-size:11px;color:var(--muted2);margin-top:8px">${debugInfo}</div></div>`;
     return;
   }
   list.innerHTML=alumnos.map(a=>{
