@@ -471,6 +471,11 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
       <div class="input-group"><label class="input-label">Objetivo principal</label><select class="input-field" id="ana-objetivo"><option value="">Seleccionar...</option><option>Perder grasa corporal</option><option>Ganar masa muscular</option><option>Mejorar fuerza</option><option>Mejorar rendimiento</option><option>Salud general</option><option>Definición muscular</option></select></div>
       <div class="input-group"><label class="input-label">Experiencia en el gym</label><select class="input-field" id="ana-experiencia"><option value="">Seleccionar...</option><option>Nunca he entrenado</option><option>Menos de 6 meses</option><option>6 meses a 1 año</option><option>1 a 3 años</option><option>Más de 3 años</option></select></div>
       <div class="input-group"><label class="input-label">Días disponibles por semana</label><select class="input-field" id="ana-dias"><option value="">Seleccionar...</option><option>2 días</option><option>3 días</option><option>4 días</option><option>5 días</option><option>6 días</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="input-group" style="margin:0"><label class="input-label">Peso actual (kg)</label><input class="input-field" type="number" step="0.1" id="ana-peso" placeholder="Ej: 75.5"></div>
+        <div class="input-group" style="margin:0"><label class="input-label">Altura (cm)</label><input class="input-field" type="number" id="ana-altura" placeholder="Ej: 175"></div>
+      </div>
+      <div class="input-group"><label class="input-label">Biotipo corporal</label><select class="input-field" id="ana-biotipo"><option value="">Seleccionar...</option><option value="ectomorfo">Ectomorfo — Delgado, metabolismo rápido, dificultad para ganar masa</option><option value="mesomorfo">Mesomorfo — Atlético, gana músculo y pierde grasa con facilidad</option><option value="endomorfo">Endomorfo — Tendencia a acumular grasa, metabolismo más lento</option></select></div>
       <div class="input-group"><label class="input-label">Lesiones o dolores crónicos</label><textarea class="input-field" id="ana-lesiones" rows="3" placeholder='Ej: Dolor lumbar... (escribe "ninguna" si no tienes)'></textarea></div>
       <div class="input-group"><label class="input-label">Condiciones médicas</label><textarea class="input-field" id="ana-condiciones" rows="3" placeholder='Ej: Hipertensión... (escribe "ninguna" si no tienes)'></textarea></div>
       <div class="input-group"><label class="input-label">Medicación actual</label><select class="input-field" id="ana-medicacion"><option value="">Seleccionar...</option><option>No tomo medicación</option><option>Antiinflamatorios</option><option>Antihipertensivos</option><option>Otros medicamentos</option></select></div>
@@ -551,6 +556,11 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
       <div class="input-group"><label class="input-label">Objetivo principal</label><select class="input-field" id="ficha-objetivo"><option value="">No especificado</option><option>Perder grasa corporal</option><option>Ganar masa muscular</option><option>Mejorar fuerza</option><option>Mejorar rendimiento</option><option>Salud general</option><option>Definición muscular</option></select></div>
       <div class="input-group"><label class="input-label">Experiencia</label><select class="input-field" id="ficha-experiencia"><option value="">No especificado</option><option>Nunca ha entrenado</option><option>Menos de 6 meses</option><option>6 meses a 1 año</option><option>1 a 3 años</option><option>Más de 3 años</option></select></div>
       <div class="input-group"><label class="input-label">Días disponibles</label><select class="input-field" id="ficha-dias"><option value="">No especificado</option><option>2 días</option><option>3 días</option><option>4 días</option><option>5 días</option><option>6 días</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="input-group" style="margin:0"><label class="input-label">Peso (kg)</label><input class="input-field" type="number" step="0.1" id="ficha-peso" placeholder="—"></div>
+        <div class="input-group" style="margin:0"><label class="input-label">Altura (cm)</label><input class="input-field" type="number" id="ficha-altura" placeholder="—"></div>
+      </div>
+      <div class="input-group"><label class="input-label">Biotipo corporal</label><select class="input-field" id="ficha-biotipo"><option value="">No especificado</option><option value="ectomorfo">Ectomorfo</option><option value="mesomorfo">Mesomorfo</option><option value="endomorfo">Endomorfo</option></select></div>
       <div class="input-group"><label class="input-label">Lesiones / Dolores crónicos</label><textarea class="input-field" id="ficha-lesiones" rows="3" placeholder="Ej: Dolor lumbar..."></textarea></div>
       <div class="input-group"><label class="input-label">Condiciones médicas</label><textarea class="input-field" id="ficha-condiciones" rows="3" placeholder="Ej: Hipertensión..."></textarea></div>
       <div class="input-group"><label class="input-label">Medicación</label><select class="input-field" id="ficha-medicacion"><option value="">No especificado</option><option>No toma medicación</option><option>Antiinflamatorios</option><option>Antihipertensivos</option><option>Otros</option></select></div>
@@ -1406,8 +1416,13 @@ async function loadAnamnese(){
   try{
     const {data}=await supa.from('anamnese').select('*').eq('alumno_email',currentUser.email).single();
     if(!data)return;
-    const fields=['objetivo','experiencia','dias','lesiones','condiciones','medicacion','evitar','notas'];
+    const fields=['objetivo','experiencia','dias','lesiones','condiciones','medicacion','evitar','notas','biotipo'];
     fields.forEach(f=>{const el=document.getElementById('ana-'+f);if(el)el.value=data[f]||'';});
+    // Load numeric fields
+    const pesoEl=document.getElementById('ana-peso');
+    const alturaEl=document.getElementById('ana-altura');
+    if(pesoEl)pesoEl.value=data.peso||'';
+    if(alturaEl)alturaEl.value=data.altura||'';
     const lu=document.getElementById('ana-last-update');
     if(lu&&data.updated_at)lu.textContent='Última actualización: '+new Date(data.updated_at).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
   }catch(e){}
@@ -1425,6 +1440,9 @@ async function saveAnamnese(){
     medicacion:document.getElementById('ana-medicacion').value,
     evitar:document.getElementById('ana-evitar').value,
     notas:document.getElementById('ana-notas').value,
+    peso:parseFloat(document.getElementById('ana-peso').value)||null,
+    altura:parseInt(document.getElementById('ana-altura').value)||null,
+    biotipo:document.getElementById('ana-biotipo').value||null,
     updated_at:new Date().toISOString()
   };
   const {error}=await supa.from('anamnese').upsert(row,{onConflict:'alumno_email'});
@@ -1515,8 +1533,10 @@ async function openFichaAlumno(){
   try{
     const {data}=await supa.from('anamnese').select('*').eq('alumno_email',currentAlumnoEmail).single();
     if(data){
-      const map={objetivo:'ficha-objetivo',experiencia:'ficha-experiencia',dias:'ficha-dias',lesiones:'ficha-lesiones',condiciones:'ficha-condiciones',medicacion:'ficha-medicacion',evitar:'ficha-evitar',notas:'ficha-notas-alumno'};
+      const map={objetivo:'ficha-objetivo',experiencia:'ficha-experiencia',dias:'ficha-dias',biotipo:'ficha-biotipo',lesiones:'ficha-lesiones',condiciones:'ficha-condiciones',medicacion:'ficha-medicacion',evitar:'ficha-evitar',notas:'ficha-notas-alumno'};
       Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.value=data[k]||'';});
+      const fpeso=document.getElementById('ficha-peso');if(fpeso)fpeso.value=data.peso||'';
+      const faltura=document.getElementById('ficha-altura');if(faltura)faltura.value=data.altura||'';
       const lu=document.getElementById('ficha-last-update');
       if(lu&&data.updated_at)lu.textContent='Ficha del alumno · '+new Date(data.updated_at).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
     }
