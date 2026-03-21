@@ -723,6 +723,48 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
 const SUPA_URL='https://akwcqrwwksuctxfawlco.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrd2Nxcnd3a3N1Y3R4ZmF3bGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMzA5NzIsImV4cCI6MjA4OTYwNjk3Mn0.CNHoywf9lB26TySTpiUh7JW-HQE2f7OnTLqSJ_D5ZLk';
 const CDN='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/';
+
+// ─── EJERCICIOS PERSONALIZADOS (máquinas comunes de academia) ─────────────────
+const CUSTOM_EXERCISES=[
+  // CADEIRA EXTENSORA / SILLA EXTENSORA
+  {id:'cx-leg-extension',    name:'Extensión de cuádriceps en máquina',   category:'upper legs', primaryMuscles:['quadriceps'],              secondaryMuscles:[],                       equipment:'machine', level:'beginner',  instructions:['Siéntate en la máquina con la espalda apoyada','Coloca las piernas bajo la almohadilla','Extiende las piernas hasta arriba contrayendo el cuádriceps','Baja lentamente sin llegar a tocar el peso']},
+  // CADEIRA FLEXORA / SILLA FLEXORA
+  {id:'cx-leg-curl',         name:'Curl femoral en máquina sentado',       category:'upper legs', primaryMuscles:['hamstrings'],              secondaryMuscles:['calves'],               equipment:'machine', level:'beginner',  instructions:['Siéntate en la máquina con la espalda recta','Coloca la almohadilla sobre los tobillos','Flexiona las rodillas llevando los talones hacia los glúteos','Baja lentamente controlando el movimiento']},
+  // CADEIRA ADUTORA / SILLA ADUCTORA
+  {id:'cx-adductor',        name:'Aductores en máquina (silla aductora)',  category:'upper legs', primaryMuscles:['adductors'],              secondaryMuscles:['glutes'],               equipment:'machine', level:'beginner',  instructions:['Siéntate en la máquina con las piernas separadas sobre las almohadillas','Junta las piernas hacia el centro contrayendo los aductores','Mantén 1 segundo en la contracción máxima','Regresa lentamente a la posición inicial']},
+  // CADEIRA ABDUTORA / SILLA ABDUCTORA
+  {id:'cx-abductor',        name:'Abductores en máquina (silla abductora)',category:'upper legs', primaryMuscles:['abductors','glutes'],      secondaryMuscles:[],                       equipment:'machine', level:'beginner',  instructions:['Siéntate en la máquina con las piernas juntas sobre las almohadillas','Separa las piernas hacia afuera contrayendo los glúteos y abductores','Mantén 1 segundo en la posición más abierta','Regresa lentamente']},
+  // CADEIRA FLEXORA DEITADO / CURL FEMORAL TUMBADO
+  {id:'cx-lying-leg-curl',  name:'Curl femoral en máquina tumbado',        category:'upper legs', primaryMuscles:['hamstrings'],              secondaryMuscles:['calves','glutes'],      equipment:'machine', level:'beginner',  instructions:['Túmbate boca abajo en la máquina','Coloca la almohadilla sobre los tobillos','Flexiona las rodillas llevando los talones hacia los glúteos','Baja lentamente sin dejar caer el peso']},
+  // PANTURRILHA / GEMELOS EN MÁQUINA
+  {id:'cx-calf-machine',    name:'Gemelos en máquina',                     category:'lower legs', primaryMuscles:['calves','gastrocnemius'],  secondaryMuscles:['soleus'],               equipment:'machine', level:'beginner',  instructions:['Coloca los hombros bajo las almohadillas','Sube los talones lo máximo posible','Mantén 1 segundo arriba','Baja lentamente hasta sentir el estiramiento']},
+  // PRESS DE PIERNAS
+  {id:'cx-leg-press-45',    name:'Prensa de piernas 45°',                  category:'upper legs', primaryMuscles:['quadriceps','glutes'],     secondaryMuscles:['hamstrings','calves'],  equipment:'machine', level:'beginner',  instructions:['Siéntate en la prensa con los pies en la plataforma a la anchura de los hombros','Desbloquea el seguro','Baja la plataforma flexionando las rodillas a 90°','Empuja hasta casi extender sin bloquear las rodillas']},
+  // GLUTEO EN MÁQUINA
+  {id:'cx-glute-machine',   name:'Extensión de glúteo en máquina',         category:'glutes',     primaryMuscles:['gluteus maximus'],         secondaryMuscles:['hamstrings'],           equipment:'machine', level:'beginner',  instructions:['Colócate en la máquina con el pie en la almohadilla','Empuja hacia atrás extendiendo la cadera','Contrae el glúteo al máximo','Regresa lentamente a la posición inicial']},
+  // HACK SQUAT
+  {id:'cx-hack-squat',      name:'Sentadilla hack en máquina',             category:'upper legs', primaryMuscles:['quadriceps','glutes'],     secondaryMuscles:['hamstrings','calves'],  equipment:'machine', level:'intermediate',instructions:['Coloca los hombros bajo los apoyos con pies en la plataforma','Desciende flexionando las rodillas hasta 90°','Sube empujando con los talones','Mantén la espalda pegada al respaldo']},
+  // SMITH MACHINE SQUAT
+  {id:'cx-smith-squat',     name:'Sentadilla en máquina Smith',            category:'upper legs', primaryMuscles:['quadriceps','glutes'],     secondaryMuscles:['hamstrings'],           equipment:'machine', level:'beginner',  instructions:['Coloca la barra sobre los trapecios','Coloca los pies ligeramente adelante del cuerpo','Desciende controlando hasta 90° de flexión','Empuja hacia arriba para volver']},
+  // ABDOMINAL MACHINE
+  {id:'cx-ab-machine',      name:'Crunch abdominal en máquina',            category:'waist',      primaryMuscles:['abdominals'],             secondaryMuscles:['obliques'],             equipment:'machine', level:'beginner',  instructions:['Siéntate en la máquina y agarra las asas','Flexiona el tronco llevando los codos hacia las rodillas','Contrae el abdomen al máximo','Regresa lentamente a la posición inicial']},
+  // LOWER BACK MACHINE
+  {id:'cx-back-machine',    name:'Extensión de espalda en máquina',        category:'back',       primaryMuscles:['erector spinae'],          secondaryMuscles:['glutes','hamstrings'],  equipment:'machine', level:'beginner',  instructions:['Siéntate en la máquina con los pies apoyados','Cruza los brazos o agarra las asas','Extiende la espalda empujando contra la almohadilla','Regresa lentamente al inicio']},
+  // PECK DECK
+  {id:'cx-pec-deck',        name:'Pec deck / Mariposa en máquina',         category:'chest',      primaryMuscles:['pectorals'],              secondaryMuscles:['anterior deltoid'],     equipment:'machine', level:'beginner',  instructions:['Siéntate con la espalda pegada al respaldo','Coloca los codos en las almohadillas','Junta los brazos al frente contrayendo el pecho','Regresa lentamente abriendo el pecho']},
+  // SHOULDER MACHINE
+  {id:'cx-shoulder-machine',name:'Press de hombros en máquina',            category:'shoulders',  primaryMuscles:['deltoids'],               secondaryMuscles:['triceps','traps'],       equipment:'machine', level:'beginner',  instructions:['Ajusta el asiento para que las asas queden a altura de los hombros','Empuja hacia arriba extendiendo los brazos','Baja lentamente hasta los hombros','Mantén la espalda pegada al respaldo']},
+  // PULLOVER MACHINE
+  {id:'cx-pullover',        name:'Pullover en máquina',                    category:'back',       primaryMuscles:['lats'],                   secondaryMuscles:['chest','triceps'],      equipment:'machine', level:'intermediate',instructions:['Siéntate con los codos en las almohadillas','Empuja hacia abajo llevando los codos al abdomen','Contrae los dorsales al máximo','Regresa lentamente con control']},
+];
+
+// Merge custom exercises with API exercises when library loads
+function mergeCustomExercises(apiExercises){
+  // Remove API exercises that we have better versions of
+  const customIds=new Set(CUSTOM_EXERCISES.map(e=>e.id));
+  return [...CUSTOM_EXERCISES,...apiExercises];
+}
+
 // Muscle group filter — maps chips to API categories & primaryMuscles values
 const MUSCLE_MAP={
   'chest':    ['chest','pectorals','pectoralis'],
@@ -1261,7 +1303,8 @@ async function loadBiblioteca(){
   document.getElementById('lib-list').innerHTML='<div class="lib-loading" style="grid-column:span 2"><div class="lib-spinner"></div><span>Cargando biblioteca...</span></div>';
   try{
     const r=await fetch(CDN+'dist/exercises.json');
-    allLibExercises=await r.json();
+    const apiData=await r.json();
+    allLibExercises=mergeCustomExercises(apiData);
     document.getElementById('lib-count-label').textContent=allLibExercises.length+' ejercicios';
     renderLib();
   }catch(e){
@@ -1293,9 +1336,10 @@ function renderLib(){
   const showing=exs.slice(0,80);
   if(!showing.length){el.innerHTML='<div style="grid-column:span 2;padding:40px;text-align:center;color:var(--muted)">Sin resultados</div>';return;}
   el.innerHTML=showing.map(e=>{
-    const img=CDN+'exercises/'+e.id+'/0.jpg';
+    const isCustom=e.id&&e.id.startsWith('cx-');
+    const img=isCustom?'':CDN+'exercises/'+e.id+'/0.jpg';
     const muscle=(e.primaryMuscles||[])[0]||e.category||'';
-    return '<div class="lib-card" onclick="openExDetail(\''+escJS(e.id)+'\',\''+escJS(e.name)+'\',\''+escJS(muscle)+'\',\''+escJS((e.primaryMuscles||[]).join(', '))+'\',\''+escJS((e.secondaryMuscles||[]).join(', '))+'\',\''+escJS((e.instructions||[]).join('|'))+'\')"><img class="lib-card-img" src="'+img+'" onerror="this.style.display=\'none\'" loading="lazy"><div class="lib-card-body"><div class="lib-card-name">'+translateEx(e.name)+'</div><div class="lib-card-muscle">'+muscle+'</div></div></div>';
+    return '<div class="lib-card" onclick="openExDetail(\''+escJS(e.id)+'\',\''+escJS(e.name)+'\',\''+escJS(muscle)+'\',\''+escJS((e.primaryMuscles||[]).join(', '))+'\',\''+escJS((e.secondaryMuscles||[]).join(', '))+'\',\''+escJS((e.instructions||[]).join('|'))+'\')">'+( isCustom?'<div class="lib-card-img" style="display:flex;align-items:center;justify-content:center;font-size:44px;background:linear-gradient(135deg,#1a3a0d,#0d1f08)">🏋️</div>':'<img class="lib-card-img" src="'+img+'" onerror="this.style.display=\'none\'" loading="lazy">')+'<div class="lib-card-body"><div class="lib-card-name">'+translateEx(e.name)+'</div><div class="lib-card-muscle">'+muscle+'</div></div></div>';
   }).join('');
 }
 
@@ -2202,7 +2246,7 @@ function openLibRutina(){
   updateLibRutinaCount();
   if(!allLibExercises.length){
     document.getElementById('lib-rutina-list').innerHTML='<div class="lib-loading" style="grid-column:span 2"><div class="lib-spinner"></div><span>Cargando...</span></div>';
-    fetch(CDN+'dist/exercises.json').then(r=>r.json()).then(data=>{allLibExercises=data;renderLibRutina();}).catch(()=>{
+    fetch(CDN+'dist/exercises.json').then(r=>r.json()).then(data=>{allLibExercises=mergeCustomExercises(data);renderLibRutina();}).catch(()=>{
       document.getElementById('lib-rutina-list').innerHTML='<div style="grid-column:span 2;padding:40px;text-align:center;color:var(--muted)">Error cargando biblioteca</div>';
     });
   } else {renderLibRutina();}
