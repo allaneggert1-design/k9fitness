@@ -1037,7 +1037,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 
       <div class="input-group">
         <label class="input-label">Fecha de nacimiento</label>
-        <input class="input-field" id="edit-nacimiento" type="date">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <select class="input-field" id="edit-nac-dia" style="cursor:pointer;margin:0">
+            <option value="">Día</option>
+            ${Array.from({length:31},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}">${i+1}</option>`).join('')}
+          </select>
+          <select class="input-field" id="edit-nac-mes" style="cursor:pointer;margin:0">
+            <option value="">Mes</option>
+            ${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((m,i)=>`<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('')}
+          </select>
+          <select class="input-field" id="edit-nac-anio" style="cursor:pointer;margin:0">
+            <option value="">Año</option>
+            ${Array.from({length:80},(_,i)=>`<option value="${2010-i}">${2010-i}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
       <div class="input-group">
@@ -1108,7 +1121,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 <script>
 const SUPA_URL='https://akwcqrwwksuctxfawlco.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrd2Nxcnd3a3N1Y3R4ZmF3bGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMzA5NzIsImV4cCI6MjA4OTYwNjk3Mn0.CNHoywf9lB26TySTpiUh7JW-HQE2f7OnTLqSJ_D5ZLk';
-const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY,{
+  auth:{
+    persistSession:true,
+    autoRefreshToken:true,
+    detectSessionInUrl:false,
+    storage:window.localStorage
+  }
+});
 let currentUser=null,currentProfile=null,allExercises=null,filteredExercises=[];
 let libFilters={muscle:'all',equip:'all',level:'all'};
 const BASE_IMG='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/';
@@ -1309,7 +1329,22 @@ function openEditPerfil(){
   if(!currentProfile)return;
   document.getElementById('edit-nombre').value=currentProfile.full_name||'';
   document.getElementById('edit-email').value=currentUser?.email||'';
-  document.getElementById('edit-nacimiento').value=currentProfile.fecha_nacimiento||'';
+  // Populate date selects
+  const nac=currentProfile.fecha_nacimiento||'';
+  if(nac){
+    const parts=nac.split('-');
+    const diaEl=document.getElementById('edit-nac-dia');
+    const mesEl=document.getElementById('edit-nac-mes');
+    const anioEl=document.getElementById('edit-nac-anio');
+    if(diaEl) diaEl.value=parts[2]||'';
+    if(mesEl) mesEl.value=parts[1]||'';
+    if(anioEl) anioEl.value=parts[0]||'';
+  } else {
+    ['edit-nac-dia','edit-nac-mes','edit-nac-anio'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.value='';
+    });
+  }
   document.getElementById('edit-pass1').value='';
   document.getElementById('edit-pass2').value='';
   document.getElementById('foto-upload-status').textContent='';
@@ -1330,7 +1365,11 @@ function openEditPerfil(){
 async function saveEditPerfil(){
   if(!currentUser||!currentProfile)return;
   const nombre=document.getElementById('edit-nombre').value.trim();
-  const nacimiento=document.getElementById('edit-nacimiento').value||null;
+  // Build date from selects
+  const dia=document.getElementById('edit-nac-dia')?.value||'';
+  const mes=document.getElementById('edit-nac-mes')?.value||'';
+  const anio=document.getElementById('edit-nac-anio')?.value||'';
+  const nacimiento=(dia&&mes&&anio)?`${anio}-${mes}-${dia}`:null;
   const pass1=document.getElementById('edit-pass1').value;
   const pass2=document.getElementById('edit-pass2').value;
 
@@ -1376,7 +1415,7 @@ function triggerFotoUpload(){
 function handleFotoUpload(input){
   const file=input.files[0];
   if(!file)return;
-  if(file.size>2*1024*1024){showToast('⚠️ La foto debe ser menor a 2MB','error');return;}
+  if(file.size>10*1024*1024){showToast('⚠️ La foto debe ser menor a 10MB','error');return;}
 
   const statusEl=document.getElementById('foto-upload-status');
   if(statusEl) statusEl.textContent='Procesando imagen...';
@@ -1388,15 +1427,26 @@ function handleFotoUpload(input){
     const img=new Image();
     img.onload=()=>{
       const canvas=document.createElement('canvas');
-      const MAX=400;
+      const MAX=600;
       let w=img.width,h=img.height;
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
       else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
       canvas.width=w;canvas.height=h;
       const ctx=canvas.getContext('2d');
       ctx.drawImage(img,0,0,w,h);
-      const compressed=canvas.toDataURL('image/jpeg',0.8);
-      window._newFotoBase64=compressed;
+      // Use quality 0.75 for good balance size/quality
+      const compressed=canvas.toDataURL('image/jpeg',0.75);
+      // Check if still too large (>1MB base64 ~ 750KB image)
+      const sizeKB=Math.round(compressed.length*0.75/1024);
+      if(sizeKB>900){
+        // Re-compress smaller
+        canvas.width=Math.round(w*0.7);canvas.height=Math.round(h*0.7);
+        const ctx2=canvas.getContext('2d');
+        ctx2.drawImage(img,0,0,canvas.width,canvas.height);
+        window._newFotoBase64=canvas.toDataURL('image/jpeg',0.65);
+      } else {
+        window._newFotoBase64=compressed;
+      }
 
       // Update previews
       const preview=document.getElementById('edit-avatar-preview');
