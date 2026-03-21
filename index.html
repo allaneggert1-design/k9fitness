@@ -858,10 +858,19 @@ const EX_TRANSLATIONS={
   "Front Squat":"Sentadilla frontal",
   "Hack Squat":"Sentadilla hack",
   "Leg Press":"Prensa de piernas",
-  "Leg Extension":"Extensión de cuádriceps",
-  "Leg Curl":"Curl femoral",
-  "Lying Leg Curl":"Curl femoral tumbado",
+  "Leg Extension":"Extensión de cuádriceps (silla extensora)",
+  "Leg Curl":"Curl femoral (silla flexora)",
+  "Lying Leg Curl":"Curl femoral tumbado (silla flexora)",
   "Standing Leg Curl":"Curl femoral de pie",
+  "Seated Leg Curl":"Curl femoral sentado (silla flexora)",
+  "Hip Abduction":"Silla abductora / Abductores en máquina",
+  "Hip Adduction":"Silla aductora / Aductores en máquina",
+  "Adductor":"Aductores en máquina",
+  "Abductor":"Abductores en máquina",
+  "Leg Press":"Prensa de piernas",
+  "Seated Calf Raise":"Gemelos sentado (pantorrilla)",
+  "Standing Calf Raise":"Gemelos de pie (pantorrilla)",
+  "Calf Raise":"Elevación de gemelos (pantorrilla)",
   "Lunge":"Zancada",
   "Walking Lunge":"Zancadas caminando",
   "Bulgarian Split Squat":"Sentadilla búlgara",
@@ -1075,11 +1084,21 @@ async function loadProfile(){
   currentProfile=data;
 }
 
+const ADMIN_EMAILS=['fer@k9.com'];
+
+function isAdmin(){
+  return ADMIN_EMAILS.includes(currentUser?.email?.toLowerCase());
+}
+
 function afterLogin(){
   if(!currentProfile){goScreen('s-login');return;}
-  if(currentProfile.role==='entrenador'){
+  // Admin override: always goes to trainer panel with full access
+  if(isAdmin()||currentProfile.role==='entrenador'){
+    // Ensure role is set correctly in memory
+    if(isAdmin())currentProfile.role='entrenador';
     goScreen('s-entrenador');
     loadAlumnos();
+    checkBirthdays(); // Check birthdays on trainer login
   } else {
     goScreen('s-inicio');
     loadInicio();
@@ -2589,6 +2608,61 @@ function closeEditRutina(){
   _editRutinaRows=[];
 }
 
+
+// ─── ANIVERSÁRIOS ─────────────────────────────────────────────────────────────
+async function checkBirthdays(){
+  try{
+    const today=new Date();
+    const todayMM=String(today.getMonth()+1).padStart(2,'0');
+    const todayDD=String(today.getDate()).padStart(2,'0');
+    // Get all alumnos with birth date
+    const {data}=await supa.from('profiles')
+      .select('full_name,email,fecha_nacimiento')
+      .eq('role','alumno')
+      .not('fecha_nacimiento','is',null);
+    if(!data?.length)return;
+    const hoyAniversarios=data.filter(a=>{
+      if(!a.fecha_nacimiento)return false;
+      const parts=a.fecha_nacimiento.split('-');
+      return parts[1]===todayMM&&parts[2]===todayDD;
+    });
+    if(!hoyAniversarios.length)return;
+    // Show birthday notification banner
+    const names=hoyAniversarios.map(a=>a.full_name?.split(' ')[0]||a.email).join(', ');
+    const count=hoyAniversarios.length;
+    showBirthdayAlert(hoyAniversarios);
+  }catch(e){console.log('birthday check error:',e);}
+}
+
+function showBirthdayAlert(alumnos){
+  const existing=document.getElementById('birthday-banner');
+  if(existing)existing.remove();
+  const banner=document.createElement('div');
+  banner.id='birthday-banner';
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:500;max-width:430px;margin:0 auto;';
+  const names=alumnos.map(a=>'<b>'+( a.full_name?.split(' ')[0]||a.email)+'</b>').join(', ');
+  const ages=alumnos.map(a=>{
+    if(!a.fecha_nacimiento)return '';
+    const edad=Math.floor((Date.now()-new Date(a.fecha_nacimiento+'T12:00:00'))/(365.25*24*60*60*1000));
+    return ' ('+edad+' años)';
+  });
+  const detail=alumnos.map((a,i)=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.15);'+( i===alumnos.length-1?'border:none':'')+'">'
+    +'<div style="font-size:28px">🎂</div>'
+    +'<div><div style="font-weight:700;font-size:15px">'+( a.full_name||a.email)+'</div>'
+    +'<div style="font-size:12px;opacity:.8">'+ages[i]+'</div></div>'
+    +'<button onclick="openChatBirthday(this)" data-email="'+a.email+'" data-name="'+(a.full_name||a.email)+'" style="margin-left:auto;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:6px 12px;color:#fff;font-size:12px;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600">&#128172; Felicitar</button>'
+    +'</div>').join('');
+  banner.innerHTML='<div style="background:linear-gradient(135deg,#5BA832,#3E7522);padding:16px 20px 20px;box-shadow:0 4px 20px rgba(0,0,0,.4)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    +'<div style="font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:1px">🎉 ¡Hoy es el cumpleaños de '+(alumnos.length===1?'una alumna':'tus alumnas')+'!</div>'
+    +'<button onclick="closeBirthdayBanner()" style="background:rgba(0,0,0,.2);border:none;border-radius:50%;width:28px;height:28px;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>'
+    +'</div>'+detail+'</div>';
+  document.body.appendChild(banner);
+}
+
+
+function closeBirthdayBanner(){var b=document.getElementById('birthday-banner');if(b)b.remove();}
+function openChatBirthday(btn){const email=btn.getAttribute('data-email');const name=btn.getAttribute('data-name');enviarMensaje(email,name);}
 window.addEventListener('DOMContentLoaded',init);
 
 function irACrearTemplate(){goScreen('s-crear-template');}
