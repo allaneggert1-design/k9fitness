@@ -3299,11 +3299,25 @@ function updateLibRutinaSelectedCount(){
 
 function confirmLibRutinaSelection(){
   if(!libRutinaSelected.size){showToast('Selecciona al menos un ejercicio');return;}
+  const selected=[];
   libRutinaSelected.forEach(id=>{
     const data=(window._libRutinaData||{})[id]||{};
-    // Check not already added
-    if(!rutinaEjercicios.find(e=>e.id===id)){
-      rutinaEjercicios.push({id,name:data.name||id,muscle:data.muscle||'',img:data.img||'',series:3,reps:'10',descanso:'60s',peso:null,obs:''});
+    selected.push({id,name:data.name||id,muscle:data.muscle||'',img:data.img||''});
+  });
+  // Check if called from template creation
+  if(window._libRutinaCallback){
+    window._libRutinaCallback(selected);
+    window._libRutinaCallback=null;
+    const returnTo=window._libRutinaReturnTo||'s-crear-rutina';
+    window._libRutinaReturnTo=null;
+    showToast('✓ '+libRutinaSelected.size+' ejercicios agregados');
+    goScreen(returnTo);
+    return;
+  }
+  // Default: add to rutina
+  selected.forEach(ex=>{
+    if(!rutinaEjercicios.find(e=>e.id===ex.id)){
+      rutinaEjercicios.push({id:ex.id,name:ex.name,muscle:ex.muscle,img:ex.img,series:3,reps:'10',descanso:'60s',peso:null,obs:''});
     }
   });
   renderEjerciciosSeleccionados();
@@ -3360,15 +3374,253 @@ const WORKOUT_TEMPLATES=[
 function loadTemplates(){
   const el=document.getElementById('templates-grid');
   if(!el)return;
+  // Load predefined templates
   el.innerHTML=WORKOUT_TEMPLATES.map(t=>`
     <div onclick="openTemplate('${t.id}')" style="background:var(--card);border-radius:16px;border:1px solid var(--border);padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px">
-      <div style="width:52px;height:52px;border-radius:14px;background:${t.color === 'var(--green)' ? 'var(--green-glow)' : 'rgba(0,0,0,.2)'};border:1px solid ${t.color === 'var(--green)' ? 'rgba(91,168,50,.3)' : 'rgba(255,255,255,.1)'};display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${t.emoji}</div>
+      <div style="width:52px;height:52px;border-radius:14px;background:var(--green-glow);border:1px solid rgba(91,168,50,.3);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${t.emoji}</div>
       <div style="flex:1">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.ejercicios.length} ejercicios · ${t.dia}</div>
       </div>
       <div style="font-size:20px;color:var(--muted)">›</div>
     </div>`).join('');
+  // Load custom templates from localStorage
+  loadCustomTemplates();
+}
+
+// ─── RUTINAS BASE PARA ALUMNO ─────────────────────────────────────────────────
+function openRutinasBaseParaAlumno(){
+  if(!currentAlumnoEmail)return;
+  const nombreEl=document.getElementById('rba-alumno-nombre');
+  if(nombreEl) nombreEl.textContent=currentAlumnoNombre;
+  customTemplates=JSON.parse(localStorage.getItem('k9_custom_templates')||'[]');
+  const customSection=document.getElementById('rba-custom-section');
+  if(customSection){
+    if(!customTemplates.length){
+      customSection.innerHTML=`<div class="sec-title">Mis rutinas base</div><div style="font-size:13px;color:var(--muted);padding:8px 0 16px">No tienes rutinas base creadas aún.<br><button onclick="goScreen('s-crear-template')" style="background:none;border:none;color:var(--green-light);font-size:13px;cursor:pointer;font-weight:600;margin-top:4px">→ Crear una rutina base</button></div>`;
+    } else {
+      customSection.innerHTML=`<div class="sec-title">Mis rutinas base</div><div id="rba-custom-list" style="margin-bottom:16px">${customTemplates.map((t,i)=>renderRBACard(t,i,'custom')).join('')}</div>`;
+    }
+  }
+  const predList=document.getElementById('rba-predefined-list');
+  if(predList) predList.innerHTML=WORKOUT_TEMPLATES.map(t=>renderRBACard(t,t.id,'predefined')).join('');
+  goScreen('s-rutinas-base-alumno');
+}
+
+function renderRBACard(t, idxOrId, type){
+  return `<div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+    <div style="width:46px;height:46px;border-radius:12px;background:var(--green-glow);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${t.emoji||'📋'}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;text-transform:uppercase;line-height:1.1">${t.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${(t.ejercicios||[]).length} ejercicios · ${t.dia||'—'}</div>
+    </div>
+    <button onclick="applyRBAToCurrentAlumno('${type}_${idxOrId}')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;flex-shrink:0">Aplicar</button>
+  </div>`;
+}
+
+async function applyRBAToCurrentAlumno(typeAndId){
+  const [type,...rest]=typeAndId.split('_');
+  const id=rest.join('_');
+  let t;
+  if(type==='custom') t=customTemplates[parseInt(id)];
+  else t=WORKOUT_TEMPLATES.find(x=>x.id===id);
+  if(!t){showToast('⚠️ Rutina no encontrada','error');return;}
+  if(!confirm(`¿Aplicar "${t.name}" a ${currentAlumnoNombre} para el ${t.dia}?`))return;
+  const rows=(t.ejercicios||[]).map((ex,i)=>({
+    alumno_email:currentAlumnoEmail,nombre_rutina:t.name,dia:t.dia,
+    ejercicio_nombre:ex.name,series:ex.series||3,reps:String(ex.reps||'10'),
+    descanso:ex.descanso||'60s',peso_kg:null,observaciones:ex.obs||null,orden:i+1
+  }));
+  const {error}=await supa.from('rutinas').insert(rows);
+  if(error){showToast('⚠️ Error: '+error.message,'error');return;}
+  showToast(`✓ "${t.name}" asignado a ${currentAlumnoNombre} 🎉`);
+  goScreen('s-alumno-detail');
+  loadAlumnoWeeklyPlan(currentAlumnoEmail);
+}
+
+// ─── CUSTOM TEMPLATES ─────────────────────────────────────────────────────────
+let customTemplates=JSON.parse(localStorage.getItem('k9_custom_templates')||'[]');
+let tplSelectedEmoji='💪';
+let tplEjercicios=[];
+
+function loadCustomTemplates(){
+  const section=document.getElementById('custom-templates-section');
+  const grid=document.getElementById('custom-templates-grid');
+  if(!grid)return;
+  customTemplates=JSON.parse(localStorage.getItem('k9_custom_templates')||'[]');
+  if(!customTemplates.length){
+    if(section)section.style.display='none';
+    return;
+  }
+  if(section)section.style.display='block';
+  grid.innerHTML=customTemplates.map((t,i)=>`
+    <div style="background:var(--card);border-radius:16px;border:1px solid rgba(91,168,50,.3);padding:16px;display:flex;align-items:center;gap:14px">
+      <div onclick="openCustomTemplate(${i})" style="width:52px;height:52px;border-radius:14px;background:var(--green-glow);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;cursor:pointer">${t.emoji||'📋'}</div>
+      <div style="flex:1;cursor:pointer" onclick="openCustomTemplate(${i})">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase">${t.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.ejercicios?.length||0} ejercicios · ${t.dia||'—'}</div>
+      </div>
+      <button onclick="deleteCustomTemplate(${i})" style="background:none;border:1px solid rgba(231,76,60,.2);border-radius:8px;padding:6px 10px;color:#e74c3c;font-size:12px;cursor:pointer;flex-shrink:0">🗑</button>
+      <div onclick="openCustomTemplate(${i})" style="font-size:20px;color:var(--muted);cursor:pointer">›</div>
+    </div>`).join('');
+}
+
+function selectTplEmoji(el, emoji){
+  tplSelectedEmoji=emoji;
+  document.querySelectorAll('.tpl-emoji-btn').forEach(b=>{
+    b.style.background='var(--card)';
+    b.style.border='1px solid var(--border)';
+  });
+  el.style.background='var(--green-glow)';
+  el.style.border='2px solid var(--green)';
+}
+
+function renderTplEjercicios(){
+  const el=document.getElementById('tpl-ejercicios-list');
+  const badge=document.getElementById('tpl-ex-count');
+  if(!el)return;
+  if(badge){badge.style.display=tplEjercicios.length?'block':'none';badge.textContent=tplEjercicios.length;}
+  if(!tplEjercicios.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0">Agrega ejercicios desde la biblioteca o manualmente.</div>';
+    return;
+  }
+  el.innerHTML=tplEjercicios.map((ex,i)=>`
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center">
+      ${ex.img?`<img src="${ex.img}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:44px;height:44px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏋️</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
+        <div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap">
+          <input type="number" value="${ex.series||3}" min="1" max="10" style="width:46px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios[${i}].series=parseInt(this.value)||3" title="Series">
+          <input value="${ex.reps||'10'}" style="width:52px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios[${i}].reps=this.value" title="Reps">
+          <input value="${ex.descanso||'60s'}" style="width:52px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios[${i}].descanso=this.value" title="Descanso">
+        </div>
+      </div>
+      <button onclick="tplEjercicios.splice(${i},1);renderTplEjercicios()" style="background:none;border:none;color:var(--muted2);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">✕</button>
+    </div>`).join('');
+}
+
+function openBibliotecaParaTemplate(){
+  // Reuse biblioteca rutina but return to crear-template
+  window._libRutinaReturnTo='s-crear-template';
+  window._libRutinaCallback=function(selected){
+    selected.forEach(ex=>{
+      if(!tplEjercicios.find(e=>e.id===ex.id)){
+        tplEjercicios.push({id:ex.id,name:ex.name,muscle:ex.muscle,img:ex.img,series:3,reps:'10',descanso:'60s',obs:''});
+      }
+    });
+    renderTplEjercicios();
+  };
+  libRutinaSelected=new Set();
+  libRutinaFilter={muscle:'',search:''};
+  updateLibRutinaSelectedCount();
+  if(!allLibExercises.length){
+    document.getElementById('lib-rutina-list').innerHTML='<div class="lib-loading" style="grid-column:span 2"><div class="lib-spinner"></div></div>';
+    fetch(CDN+'dist/exercises.json').then(r=>r.json()).then(data=>{allLibExercises=data;renderLibRutina();});
+  } else {
+    renderLibRutina();
+  }
+  goScreen('s-biblioteca-rutina');
+}
+
+function addTplEjercicioManual(){
+  const name=prompt('Nombre del ejercicio:');
+  if(!name)return;
+  tplEjercicios.push({name,muscle:'',img:'',series:3,reps:'10',descanso:'60s',obs:''});
+  renderTplEjercicios();
+}
+
+function saveCustomTemplate(){
+  const nombre=document.getElementById('tpl-nombre').value.trim();
+  const dia=document.getElementById('tpl-dia').value;
+  if(!nombre){showToast('⚠️ Escribe un nombre para la rutina base','error');return;}
+  if(!tplEjercicios.length){showToast('⚠️ Agrega al menos un ejercicio','error');return;}
+  const newTemplate={
+    id:'custom_'+Date.now(),
+    name:nombre,
+    emoji:tplSelectedEmoji,
+    dia,
+    ejercicios:[...tplEjercicios],
+    custom:true,
+    created:new Date().toISOString()
+  };
+  customTemplates.unshift(newTemplate);
+  localStorage.setItem('k9_custom_templates',JSON.stringify(customTemplates));
+  showToast('✓ Rutina base "'+nombre+'" guardada 🎉');
+  tplEjercicios=[];
+  renderTplEjercicios();
+  document.getElementById('tpl-nombre').value='';
+  goScreen('s-templates');
+  loadTemplates();
+}
+
+function deleteCustomTemplate(idx){
+  if(!confirm('¿Eliminar esta rutina base?'))return;
+  customTemplates.splice(idx,1);
+  localStorage.setItem('k9_custom_templates',JSON.stringify(customTemplates));
+  loadCustomTemplates();
+  showToast('✓ Rutina base eliminada');
+}
+
+function openCustomTemplate(idx){
+  const t=customTemplates[idx];
+  if(!t)return;
+  // Reuse apply template screen
+  const el=document.getElementById('apply-template-content');
+  const title=document.getElementById('apply-template-title');
+  if(title) title.textContent=t.emoji+' '+t.name;
+  if(!el)return;
+  el.innerHTML=`
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Selecciona el alumno al que deseas aplicar esta rutina base.</div>
+    <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:16px">
+      ${(t.ejercicios||[]).map((ex,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i<t.ejercicios.length-1?'border-bottom:1px solid var(--border)':''}">
+        <div style="width:28px;height:28px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">${i+1}</div>
+        ${ex.img?`<img src="${ex.img}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:''}
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${ex.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${ex.series} series × ${ex.reps} reps · ${ex.descanso}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="sec-title">Aplicar a alumno</div>
+    <div id="template-alumnos-list"><div class="lib-loading"><div class="lib-spinner"></div></div></div>
+    <div style="height:20px"></div>`;
+  goScreen('s-apply-template');
+  supa.from('profiles').select('*').eq('role','alumno').then(({data:alumnos})=>{
+    const listEl=document.getElementById('template-alumnos-list');
+    if(!listEl)return;
+    if(!alumnos?.length){listEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay alumnos disponibles</div>';return;}
+    listEl.innerHTML=alumnos.map(a=>`
+      <button onclick="applyCustomTemplateToAlumno(${idx},'${a.email}','${(a.full_name||'').replace(/'/g,"\\'")}')" style="width:100%;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green-dark),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">${(a.full_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${a.full_name||a.email}</div>
+          <div style="font-size:11px;color:var(--muted)">${a.email}</div>
+        </div>
+        <div style="background:var(--green);color:#fff;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px">Aplicar</div>
+      </button>`).join('');
+  });
+}
+
+async function applyCustomTemplateToAlumno(idx, alumnoEmail, alumnoNombre){
+  const t=customTemplates[idx];
+  if(!t)return;
+  if(!confirm('¿Aplicar "'+t.name+'" a '+alumnoNombre+' para el '+t.dia+'?'))return;
+  const rows=(t.ejercicios||[]).map((ex,i)=>({
+    alumno_email:alumnoEmail,
+    nombre_rutina:t.name,
+    dia:t.dia,
+    ejercicio_nombre:ex.name,
+    series:ex.series||3,
+    reps:String(ex.reps||'10'),
+    descanso:ex.descanso||'60s',
+    peso_kg:null,
+    observaciones:ex.obs||null,
+    orden:i+1
+  }));
+  const {error}=await supa.from('rutinas').insert(rows);
+  if(error){showToast('⚠️ Error al aplicar','error');return;}
+  showToast('✓ "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
+  goScreen('s-entrenador');
 }
 
 function openTemplate(templateId){
@@ -3940,7 +4192,7 @@ init();
     <div style="padding:14px 20px 0;display:flex;gap:10px;margin-bottom:4px">
       <button onclick="goScreen('s-templates')" style="flex:1;background:linear-gradient(135deg,rgba(243,156,18,.15),rgba(243,156,18,.05));border:1px solid rgba(243,156,18,.3);border-radius:14px;padding:14px;text-align:center;cursor:pointer">
         <div style="font-size:24px;margin-bottom:4px">📋</div>
-        <div style="font-size:12px;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.5px">Treinos Padrão</div>
+        <div style="font-size:12px;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.5px">Rutinas Base</div>
       </button>
       <button onclick="supaLogout()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;cursor:pointer;min-width:70px">
         <div style="font-size:24px;margin-bottom:4px">🚪</div>
@@ -3976,23 +4228,27 @@ init();
         </div>
       </div>
 
-      <!-- Action buttons -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
-        <button onclick="openCrearRutina(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--green);border:none;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
-          <div style="font-size:20px;margin-bottom:3px">➕</div>
-          <div style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase">Rutina</div>
+      <!-- Action buttons — 5 botones -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px">
+        <button onclick="openCrearRutina(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--green);border:none;border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:3px">➕</div>
+          <div style="font-size:9px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.3px">Rutina</div>
         </button>
-        <button onclick="openCalendario(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
-          <div style="font-size:20px;margin-bottom:3px">📅</div>
-          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Calendario</div>
+        <button onclick="openRutinasBaseParaAlumno()" style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:3px">📋</div>
+          <div style="font-size:9px;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.3px">Base</div>
         </button>
-        <button onclick="assignProgramToAlumno(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
-          <div style="font-size:20px;margin-bottom:3px">📋</div>
-          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Programa</div>
+        <button onclick="openCalendario(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:3px">📅</div>
+          <div style="font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">Horario</div>
         </button>
-        <button onclick="enviarMensaje(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer">
-          <div style="font-size:20px;margin-bottom:3px">💬</div>
-          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Mensaje</div>
+        <button onclick="assignProgramToAlumno(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:3px">🎯</div>
+          <div style="font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">Fases</div>
+        </button>
+        <button onclick="enviarMensaje(currentAlumnoEmail,currentAlumnoNombre)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer">
+          <div style="font-size:18px;margin-bottom:3px">💬</div>
+          <div style="font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">Mensaje</div>
         </button>
       </div>
 
@@ -4005,18 +4261,112 @@ init();
   </div>
 </div>
 
+<!-- RUTINAS BASE PARA ALUMNO -->
+<div class="screen" id="s-rutinas-base-alumno">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-alumno-detail')">←</div>
+      <h1>📋 <span>Aplicar rutina base</span></h1>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px 20px 0">
+      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--green-light);display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">👤</span>
+        <span>Asignar a: <b id="rba-alumno-nombre">—</b></span>
+      </div>
+      <div id="rba-custom-section" style="margin-bottom:8px">
+        <div class="sec-title">Mis rutinas base</div>
+        <div id="rba-custom-list" style="margin-bottom:16px"></div>
+      </div>
+      <div class="sec-title">Rutinas predefinidas K9</div>
+      <div id="rba-predefined-list" style="margin-bottom:20px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TEMPLATES -->
 <div class="screen" id="s-templates">
   <div class="topbar">
     <div class="topbar-row">
       <div class="back-btn" onclick="goScreen('s-entrenador')">←</div>
-      <h1>📋 <span>Treinos Padrão</span></h1>
+      <h1>📋 <span>Rutinas Base</span></h1>
+      <button onclick="goScreen('s-crear-template')" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase">+ Nueva</button>
     </div>
   </div>
   <div class="scroll">
     <div style="padding:14px 20px 0">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Seleciona un template, personalízalo y aplícalo al alumno con un clic.</div>
-      <div id="templates-grid" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;line-height:1.5">Aplica una rutina base a cualquier alumno con un clic. Puedes usar las predefinidas o crear las tuyas.</div>
+
+      <!-- Custom templates -->
+      <div id="custom-templates-section" style="display:none;margin-bottom:8px">
+        <div class="sec-title" style="margin-top:16px">Mis rutinas base</div>
+        <div id="custom-templates-grid" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+      </div>
+
+      <div class="sec-title" style="margin-top:16px">Rutinas predefinidas K9</div>
+      <div id="templates-grid" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CREAR TEMPLATE -->
+<div class="screen" id="s-crear-template">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="back-btn" onclick="goScreen('s-templates')">←</div>
+      <h1>Nueva <span>Rutina Base</span></h1>
+      <button onclick="saveCustomTemplate()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase">Guardar</button>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:14px 20px 0">
+
+      <!-- Info básica -->
+      <div class="input-group">
+        <label class="input-label">Nombre de la rutina base</label>
+        <input class="input-field" id="tpl-nombre" placeholder="Ej: Pecho y Tríceps — Nivel Principiante">
+      </div>
+
+      <!-- Emoji/ícono -->
+      <div class="input-group">
+        <label class="input-label">Ícono (emoji)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="tpl-emoji-grid">
+          <div onclick="selectTplEmoji(this,'💪')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--green-glow);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">💪</div>
+          <div onclick="selectTplEmoji(this,'🏋️')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🏋️</div>
+          <div onclick="selectTplEmoji(this,'🦵')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🦵</div>
+          <div onclick="selectTplEmoji(this,'🎯')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🎯</div>
+          <div onclick="selectTplEmoji(this,'🔥')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🔥</div>
+          <div onclick="selectTplEmoji(this,'⚡')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">⚡</div>
+          <div onclick="selectTplEmoji(this,'🏃')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🏃</div>
+          <div onclick="selectTplEmoji(this,'🧘')" class="tpl-emoji-btn" style="width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🧘</div>
+        </div>
+      </div>
+
+      <!-- Día sugerido -->
+      <div class="input-group">
+        <label class="input-label">Día sugerido</label>
+        <select class="input-field" id="tpl-dia" style="cursor:pointer">
+          <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+          <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
+        </select>
+      </div>
+
+      <!-- Ejercicios -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="sec-title" style="margin:0">Ejercicios</div>
+        <div id="tpl-ex-count" style="background:var(--green);color:#fff;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;display:none">0</div>
+      </div>
+      <div id="tpl-ejercicios-list" style="margin-bottom:12px">
+        <div style="font-size:13px;color:var(--muted);padding:8px 0">Agrega ejercicios desde la biblioteca o manualmente.</div>
+      </div>
+
+      <button onclick="openBibliotecaParaTemplate()" style="width:100%;background:var(--card);border:2px dashed var(--green);border-radius:14px;padding:14px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="font-size:20px">📚</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;color:var(--green-light);letter-spacing:.5px">Agregar de la biblioteca</span>
+      </button>
+      <button onclick="addTplEjercicioManual()" style="width:100%;background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:12px;cursor:pointer;margin-bottom:20px;font-family:'Barlow',sans-serif;color:var(--muted);font-size:13px">+ Agregar manualmente</button>
+
     </div>
   </div>
 </div>
