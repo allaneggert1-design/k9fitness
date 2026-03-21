@@ -7,7 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="K9 Fitness">
-<title>K9 Fitness Academia v2.1</title>
+<title>K9 Fitness Academia v2.5</title>
+<meta name="version" content="2.5-session-fix">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -630,6 +631,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
           <div style="font-size:20px">📧</div>
           <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px">Email</div><div id="perfil-email2" style="font-size:15px;font-weight:500">—</div></div>
         </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:20px">🎂</div>
+          <div style="flex:1"><div style="font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px">Fecha de nacimiento</div><div id="perfil-nacimiento" style="font-size:15px;font-weight:500">—</div></div>
+          <div onclick="openEditPerfil()" style="font-size:13px;color:var(--green-light);cursor:pointer;font-weight:600">Editar</div>
+        </div>
 
         <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border)">
           <div style="font-size:20px">🏅</div>
@@ -1031,7 +1037,56 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
         <input class="input-field" id="edit-nombre" placeholder="Tu nombre completo" type="text">
       </div>
 
-      
+      <div class="input-group">
+        <label class="input-label">Fecha de nacimiento</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <select class="input-field" id="edit-nac-dia" style="cursor:pointer;margin:0">
+            <option value="">Día</option>
+            <option value="01">1</option><option value="02">2</option><option value="03">3</option>
+            <option value="04">4</option><option value="05">5</option><option value="06">6</option>
+            <option value="07">7</option><option value="08">8</option><option value="09">9</option>
+            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+            <option value="13">13</option><option value="14">14</option><option value="15">15</option>
+            <option value="16">16</option><option value="17">17</option><option value="18">18</option>
+            <option value="19">19</option><option value="20">20</option><option value="21">21</option>
+            <option value="22">22</option><option value="23">23</option><option value="24">24</option>
+            <option value="25">25</option><option value="26">26</option><option value="27">27</option>
+            <option value="28">28</option><option value="29">29</option><option value="30">30</option>
+            <option value="31">31</option>
+          </select>
+          <select class="input-field" id="edit-nac-mes" style="cursor:pointer;margin:0">
+            <option value="">Mes</option>
+            <option value="01">Enero</option><option value="02">Febrero</option>
+            <option value="03">Marzo</option><option value="04">Abril</option>
+            <option value="05">Mayo</option><option value="06">Junio</option>
+            <option value="07">Julio</option><option value="08">Agosto</option>
+            <option value="09">Septiembre</option><option value="10">Octubre</option>
+            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+          <select class="input-field" id="edit-nac-anio" style="cursor:pointer;margin:0">
+            <option value="">Año</option>
+            <option value="2010">2010</option><option value="2009">2009</option>
+            <option value="2008">2008</option><option value="2007">2007</option>
+            <option value="2006">2006</option><option value="2005">2005</option>
+            <option value="2004">2004</option><option value="2003">2003</option>
+            <option value="2002">2002</option><option value="2001">2001</option>
+            <option value="2000">2000</option><option value="1999">1999</option>
+            <option value="1998">1998</option><option value="1997">1997</option>
+            <option value="1996">1996</option><option value="1995">1995</option>
+            <option value="1994">1994</option><option value="1993">1993</option>
+            <option value="1992">1992</option><option value="1991">1991</option>
+            <option value="1990">1990</option><option value="1989">1989</option>
+            <option value="1988">1988</option><option value="1987">1987</option>
+            <option value="1986">1986</option><option value="1985">1985</option>
+            <option value="1984">1984</option><option value="1983">1983</option>
+            <option value="1982">1982</option><option value="1981">1981</option>
+            <option value="1980">1980</option><option value="1975">1975</option>
+            <option value="1970">1970</option><option value="1965">1965</option>
+            <option value="1960">1960</option><option value="1955">1955</option>
+            <option value="1950">1950</option>
+          </select>
+        </div>
+      </div>
 
       <div class="input-group">
         <label class="input-label">Email (no editable)</label>
@@ -1120,8 +1175,30 @@ const LEVEL_ES={beginner:'Principiante',intermediate:'Intermedio',expert:'Avanza
 const MUSCLE_GROUP_MAP={chest:['chest'],back:['lats','middle back','lower back','traps'],legs:['quadriceps','hamstrings','glutes','calves','adductors','abductors'],shoulders:['shoulders'],biceps:['biceps'],triceps:['triceps'],core:['abdominals'],cardio:['cardiovascular system']};
 
 async function init(){
+  // Listen to auth state changes - this fires on every page load with existing session
+  supa.auth.onAuthStateChange(async (event, session)=>{
+    if(event==='SIGNED_IN'&&session&&!currentUser){
+      currentUser=session.user;
+      await loadProfile();
+      goScreen('s-inicio');
+      afterLogin();
+    }
+    if(event==='SIGNED_OUT'){
+      currentUser=null;currentProfile=null;
+      goScreen('s-login');
+    }
+    if(event==='TOKEN_REFRESHED'&&session){
+      currentUser=session.user;
+    }
+  });
+  // Also try getSession directly for immediate restore
   const {data:{session}}=await supa.auth.getSession();
-  if(session){currentUser=session.user;await loadProfile();goScreen('s-inicio');afterLogin();}
+  if(session&&!currentUser){
+    currentUser=session.user;
+    await loadProfile();
+    goScreen('s-inicio');
+    afterLogin();
+  }
 }
 
 async function doLogin(){
@@ -1309,6 +1386,19 @@ function openEditPerfil(){
   if(!currentProfile)return;
   document.getElementById('edit-nombre').value=currentProfile.full_name||'';
   document.getElementById('edit-email').value=currentUser?.email||'';
+  // Populate date selects
+  const nac=currentProfile.fecha_nacimiento||'';
+  if(nac){
+    const parts=nac.split('-');
+    const dEl=document.getElementById('edit-nac-dia');
+    const mEl=document.getElementById('edit-nac-mes');
+    const aEl=document.getElementById('edit-nac-anio');
+    if(dEl)dEl.value=parts[2]||'';
+    if(mEl)mEl.value=parts[1]||'';
+    if(aEl)aEl.value=parts[0]||'';
+  } else {
+    ['edit-nac-dia','edit-nac-mes','edit-nac-anio'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }
 
   document.getElementById('edit-pass1').value='';
   document.getElementById('edit-pass2').value='';
@@ -1330,6 +1420,11 @@ function openEditPerfil(){
 async function saveEditPerfil(){
   if(!currentUser||!currentProfile)return;
   const nombre=document.getElementById('edit-nombre').value.trim();
+  // Build date from selects
+  const dia=document.getElementById('edit-nac-dia')?.value||'';
+  const mes=document.getElementById('edit-nac-mes')?.value||'';
+  const anio=document.getElementById('edit-nac-anio')?.value||'';
+  const nacimiento=(dia&&mes&&anio)?`${anio}-${mes}-${dia}`:null;
 
   const pass1=document.getElementById('edit-pass1').value;
   const pass2=document.getElementById('edit-pass2').value;
@@ -2502,7 +2597,12 @@ function navTo(tab){
   if(currentProfile?.role==='entrenador'&&tab==='inicio'){goScreen('s-entrenador');return;}
   const m={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',comunidad:'s-comunidad',progreso:'s-progreso',mensajes:'s-mensajes',perfil:'s-perfil',notificaciones:'s-notificaciones',historial:'s-historial',nutricion:'s-nutricion',fases:'s-fases',calendario:'s-calendario',templates:'s-templates','edit-perfil':'s-edit-perfil'};
   goScreen(m[tab]||'s-inicio');
-  if(tab==='progreso') setTimeout(()=>{loadProgresoChart();loadPRsList();loadHistorialPreview();loadMuscleMap();},100);
+  if(tab==='progreso') setTimeout(async()=>{
+    try{ await loadProgresoChart(); }catch(e){ console.error('chart error',e); }
+    try{ await loadPRsList(); }catch(e){ console.error('prs error',e); }
+    try{ await loadHistorialPreview(); }catch(e){ console.error('hist error',e); }
+    try{ await loadMuscleMap(); }catch(e){ console.error('muscle error',e); }
+  },100);
   if(tab==='perfil') loadPerfil();
   if(tab==='mensajes'){if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}loadMensajesList();}
   if(tab==='notificaciones') loadNotificaciones();
@@ -2539,48 +2639,107 @@ function loadPerfil(){
   document.getElementById('perfil-role-badge').textContent=role;
   document.getElementById('perfil-plan-badge').textContent=plan;
   document.getElementById('perfil-stat1').textContent=weeks;
+  // Birth date display
+  const nacEl=document.getElementById('perfil-nacimiento');
+  if(nacEl){
+    if(currentProfile.fecha_nacimiento){
+      const edad=Math.floor((Date.now()-new Date(currentProfile.fecha_nacimiento))/(365.25*24*60*60*1000));
+      nacEl.textContent=new Date(currentProfile.fecha_nacimiento+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})+' ('+edad+' años)';
+    } else {
+      nacEl.innerHTML='<span style="color:var(--muted2);font-size:13px">No especificada — toca Editar</span>';
+    }
+  }
 
 
-  // Load stats + logros from DB
   Promise.all([
     supa.from('progreso').select('*').eq('alumno_email',currentUser.email).order('fecha',{ascending:true}),
-    supa.from('rutinas').select('dia').eq('alumno_email',currentUser.email)
-  ]).then(([{data:prog},{data:ruts}])=>{
+    supa.from('rutinas').select('dia').eq('alumno_email',currentUser.email),
+    supa.from('historial_entrenamientos').select('duracion_min,volumen_total_kg').eq('alumno_email',currentUser.email),
+    supa.from('records_personales').select('id').eq('alumno_email',currentUser.email),
+    supa.from('feed_posts').select('id').eq('alumno_email',currentUser.email),
+    supa.from('nutricion').select('fecha,agua_ml').eq('alumno_email',currentUser.email),
+  ]).then(([{data:prog},{data:ruts},{data:hist},{data:prs},{data:posts},{data:nutri}])=>{
     const registros=prog?.length||0;
-    const lastPeso=prog&&prog.length>prog.filter(p=>!p.peso_kg).length?prog.filter(p=>p.peso_kg).slice(-1)[0]?.peso_kg:null;
+    const lastPeso=prog?.filter(p=>p.peso_kg).slice(-1)[0]?.peso_kg;
     document.getElementById('perfil-stat2').textContent=registros;
     document.getElementById('perfil-stat3').textContent=lastPeso?(lastPeso+'kg'):'—';
-    renderLogros(registros,weeks,ruts?.length||0,prog||[]);
+
+    // Build extended stats for achievements
+    const histStats={
+      sesiones: hist?.length||0,
+      volumen: hist?.reduce((s,h)=>s+(h.volumen_total_kg||0),0)||0,
+      max_duracion: Math.max(0,...(hist||[]).map(h=>h.duracion_min||0)),
+      sesion_perfecta: 0, // we don't track this yet
+      prs: prs?.length||0,
+      posts: posts?.length||0,
+      agua: Math.max(0,...(nutri||[]).map(n=>n.agua_ml||0)),
+      nutricion: [...new Set((nutri||[]).filter(n=>n.fecha).map(n=>n.fecha))].length,
+    };
+
+    renderLogros(registros, weeks, ruts?.length||0, prog||[], histStats);
   });
 }
 
 const LOGROS_DEF=[
-  {id:'primer_registro',icon:'🌱',name:'Primer paso',desc:'Registra tus primeras medidas',check:(r,w,d,p)=>p.length>=1},
-  {id:'semana1',icon:'📅',name:'1 semana',desc:'1 semana como miembro',check:(r,w)=>w>=1},
-  {id:'semana4',icon:'🗓️',name:'1 mes',desc:'4 semanas como miembro',check:(r,w)=>w>=4},
-  {id:'semana12',icon:'🏆',name:'3 meses',desc:'12 semanas como miembro',check:(r,w)=>w>=12},
-  {id:'reg5',icon:'📊',name:'5 registros',desc:'5 registros de medidas',check:(r)=>r>=5},
-  {id:'reg10',icon:'📈',name:'10 registros',desc:'10 registros de medidas',check:(r)=>r>=10},
-  {id:'reg25',icon:'🔬',name:'25 registros',desc:'25 registros de medidas',check:(r)=>r>=25},
-  {id:'peso_bajo',icon:'⚖️',name:'Control de peso',desc:'Registra tu peso 3 veces',check:(r,w,d,p)=>p.filter(x=>x.peso_kg).length>=3},
-  {id:'constante',icon:'🔥',name:'Constancia',desc:'10 registros de medidas',check:(r)=>r>=10},
-  {id:'rutina',icon:'💪',name:'Con rutina',desc:'Tienes ejercicios asignados',check:(r,w,d)=>d>=1},
-  {id:'grasa',icon:'🎯',name:'Control grasa',desc:'Registra tu grasa 3 veces',check:(r,w,d,p)=>p.filter(x=>x.grasa_porcentaje).length>=3},
-  {id:'medidas',icon:'📏',name:'Medidas completas',desc:'Registra todas las medidas',check:(r,w,d,p)=>p.some(x=>x.pecho_cm&&x.cintura_cm&&x.brazos_cm&&x.piernas_cm)},
+  // ── INICIO ──────────────────────────────────────────────────────────────────
+  {id:'bienvenida',     icon:'🌱', name:'Primer paso',        desc:'Completa tu perfil inicial',              check:(r,w,d,p,h)=>true},
+  {id:'primer_registro',icon:'📊', name:'Primera medida',     desc:'Registra tus primeras medidas',           check:(r,w,d,p,h)=>p.length>=1},
+  {id:'primer_pr',      icon:'🏆', name:'Primer récord',      desc:'Bate tu primer récord personal',          check:(r,w,d,p,h)=>h.prs>=1},
+  {id:'primer_sesion',  icon:'💪', name:'Primera sesión',     desc:'Completa tu primer entrenamiento',        check:(r,w,d,p,h)=>h.sesiones>=1},
+
+  // ── CONSISTENCIA (Strava/Fitbit style) ──────────────────────────────────────
+  {id:'semana1',        icon:'📅', name:'1 semana',           desc:'1 semana como miembro',                   check:(r,w,d,p,h)=>w>=1},
+  {id:'semana4',        icon:'🗓️', name:'1 mes activo',       desc:'4 semanas de entrenamiento',              check:(r,w,d,p,h)=>w>=4},
+  {id:'semana8',        icon:'🔥', name:'2 meses fuego',      desc:'8 semanas sin parar',                     check:(r,w,d,p,h)=>w>=8},
+  {id:'semana12',       icon:'💎', name:'3 meses diamante',   desc:'12 semanas de constancia',                check:(r,w,d,p,h)=>w>=12},
+  {id:'semana26',       icon:'🦁', name:'6 meses bestia',     desc:'26 semanas de dedicación',                check:(r,w,d,p,h)=>w>=26},
+  {id:'semana52',       icon:'👑', name:'1 año legendario',   desc:'52 semanas — ¡Leyenda K9!',               check:(r,w,d,p,h)=>w>=52},
+
+  // ── SESIONES (Hevy/Strong style) ─────────────────────────────────────────────
+  {id:'ses5',           icon:'🎯', name:'5 sesiones',         desc:'Completa 5 entrenamientos',               check:(r,w,d,p,h)=>h.sesiones>=5},
+  {id:'ses10',          icon:'⚡', name:'10 sesiones',        desc:'10 entrenamientos completados',           check:(r,w,d,p,h)=>h.sesiones>=10},
+  {id:'ses25',          icon:'🏅', name:'25 sesiones',        desc:'25 entrenamientos — ¡Imparable!',         check:(r,w,d,p,h)=>h.sesiones>=25},
+  {id:'ses50',          icon:'🔱', name:'50 sesiones',        desc:'50 entrenamientos — ¡Élite!',             check:(r,w,d,p,h)=>h.sesiones>=50},
+  {id:'ses100',         icon:'💯', name:'100 sesiones',       desc:'100 entrenamientos — Leyenda',            check:(r,w,d,p,h)=>h.sesiones>=100},
+
+  // ── RÉCORDS PERSONALES ───────────────────────────────────────────────────────
+  {id:'prs3',           icon:'🥉', name:'3 récords',          desc:'3 récords personales',                    check:(r,w,d,p,h)=>h.prs>=3},
+  {id:'prs10',          icon:'🥈', name:'10 récords',         desc:'10 récords personales',                   check:(r,w,d,p,h)=>h.prs>=10},
+  {id:'prs25',          icon:'🥇', name:'25 récords',         desc:'25 récords — Máquina de PRs',             check:(r,w,d,p,h)=>h.prs>=25},
+
+  // ── PROGRESO CORPORAL (MyFitnessPal style) ──────────────────────────────────
+  {id:'reg5',           icon:'📈', name:'5 registros',        desc:'5 registros de medidas',                  check:(r,w,d,p,h)=>r>=5},
+  {id:'reg10',          icon:'📉', name:'10 registros',       desc:'10 registros de medidas',                 check:(r,w,d,p,h)=>r>=10},
+  {id:'reg25',          icon:'🔬', name:'25 registros',       desc:'25 registros — Científico del cuerpo',    check:(r,w,d,p,h)=>r>=25},
+  {id:'medidas_completas',icon:'📏',name:'Cuerpo completo',   desc:'Registra todas las medidas a la vez',     check:(r,w,d,p,h)=>p.some(x=>x.pecho_cm&&x.cintura_cm&&x.brazos_cm&&x.piernas_cm)},
+  {id:'control_peso',   icon:'⚖️', name:'Control de peso',    desc:'Registra tu peso 5 veces',                check:(r,w,d,p,h)=>p.filter(x=>x.peso_kg).length>=5},
+  {id:'control_grasa',  icon:'🎯', name:'Anti-grasa',         desc:'Registra % grasa 3 veces',                check:(r,w,d,p,h)=>p.filter(x=>x.grasa_porcentaje).length>=3},
+
+  // ── ENTRENAMIENTO ────────────────────────────────────────────────────────────
+  {id:'con_rutina',     icon:'📋', name:'Con programa',       desc:'Tienes ejercicios asignados',             check:(r,w,d,p,h)=>d>=1},
+  {id:'volumen_1000',   icon:'🏋️', name:'1.000 kg movidos',  desc:'Volumen total acumulado: 1.000 kg',        check:(r,w,d,p,h)=>h.volumen>=1000},
+  {id:'volumen_10000',  icon:'🚂', name:'10.000 kg movidos', desc:'Volumen total acumulado: 10.000 kg',       check:(r,w,d,p,h)=>h.volumen>=10000},
+  {id:'sesion_60min',   icon:'⏱️', name:'Sesión maratón',    desc:'Completa una sesión de 60+ minutos',      check:(r,w,d,p,h)=>h.max_duracion>=60},
+  {id:'sesion_perfecta',icon:'✨', name:'Sesión perfecta',   desc:'Completa una sesión al 100%',             check:(r,w,d,p,h)=>h.sesion_perfecta>=1},
+
+  // ── COMUNIDAD & NUTRICIÓN ────────────────────────────────────────────────────
+  {id:'agua_1L',        icon:'💧', name:'Hidratación',        desc:'Registra 1L de agua en un día',           check:(r,w,d,p,h)=>h.agua>=1000},
+  {id:'nutricion',      icon:'🥗', name:'Nutrición activa',   desc:'Registra 5 días de nutrición',            check:(r,w,d,p,h)=>h.nutricion>=5},
+  {id:'comunidad',      icon:'🔥', name:'Miembro activo',     desc:'Publica en la comunidad K9',              check:(r,w,d,p,h)=>h.posts>=1},
 ];
 
-function renderLogros(registros,weeks,dias,prog){
+function renderLogros(registros,weeks,dias,prog,h={}){
   const grid=document.getElementById('logros-grid');
   const countEl=document.getElementById('logros-count');
   if(!grid)return;
-  const earned=LOGROS_DEF.filter(l=>l.check(registros,weeks,dias,prog));
+  const earned=LOGROS_DEF.filter(l=>l.check(registros,weeks,dias,prog,h));
   if(countEl)countEl.textContent=earned.length+'/'+LOGROS_DEF.length;
   grid.innerHTML=LOGROS_DEF.map(l=>{
-    const done=l.check(registros,weeks,dias,prog);
-    return `<div style="text-align:center;padding:14px 8px;background:${done?'rgba(91,168,50,0.08)':'var(--card)'};border-radius:14px;border:1px solid ${done?'var(--green)':'var(--border)'};transition:all .3s" title="${l.desc}">
-      <div style="font-size:28px;margin-bottom:6px;${done?'':'filter:grayscale(1);opacity:.3'}">${l.icon}</div>
+    const done=l.check(registros,weeks,dias,prog,h);
+    return `<div style="text-align:center;padding:12px 6px;background:${done?'rgba(91,168,50,0.08)':'var(--card)'};border-radius:14px;border:1px solid ${done?'var(--green)':'var(--border)'};transition:all .3s" title="${l.desc}">
+      <div style="font-size:26px;margin-bottom:5px;${done?'':'filter:grayscale(1);opacity:.3'}">${l.icon}</div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:${done?'var(--green-light)':'var(--muted2)'};line-height:1.3">${l.name}</div>
-      ${done?`<div style="font-size:9px;color:var(--green-dark);margin-top:3px">✓ logrado</div>`:`<div style="font-size:9px;color:var(--muted2);margin-top:3px">${l.desc}</div>`}
+      ${done?`<div style="font-size:9px;color:var(--green-dark);margin-top:3px">✓ logrado</div>`:`<div style="font-size:9px;color:var(--muted2);margin-top:3px;line-height:1.2">${l.desc}</div>`}
     </div>`;
   }).join('');
 }
@@ -3679,7 +3838,7 @@ function openTemplate(templateId){
     <div style="height:20px"></div>`;
   goScreen('s-apply-template');
   // Load alumnos
-  supa.from('profiles').select('*').eq('role','alumno').eq('activo',true).then(({data:alumnos})=>{
+  supa.from('profiles').select('*').eq('role','alumno').then(({data:alumnos})=>{
     const listEl=document.getElementById('template-alumnos-list');
     if(!listEl)return;
     if(!alumnos?.length){listEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay alumnos disponibles</div>';return;}
