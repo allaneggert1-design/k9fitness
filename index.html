@@ -721,6 +721,183 @@ const SUPA_URL='https://akwcqrwwksuctxfawlco.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrd2Nxcnd3a3N1Y3R4ZmF3bGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMzA5NzIsImV4cCI6MjA4OTYwNjk3Mn0.CNHoywf9lB26TySTpiUh7JW-HQE2f7OnTLqSJ_D5ZLk';
 const CDN='https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/';
 
+const EX_TRANSLATIONS={
+  "Barbell Bench Press":"Press de banca con barra",
+  "Dumbbell Bench Press":"Press de banca con mancuernas",
+  "Incline Barbell Bench Press":"Press inclinado con barra",
+  "Incline Dumbbell Bench Press":"Press inclinado con mancuernas",
+  "Decline Barbell Bench Press":"Press declinado con barra",
+  "Decline Dumbbell Bench Press":"Press declinado con mancuernas",
+  "Dumbbell Fly":"Aperturas con mancuernas",
+  "Incline Dumbbell Fly":"Aperturas inclinadas con mancuernas",
+  "Cable Fly":"Aperturas en polea",
+  "Push-Up":"Flexiones",
+  "Wide Push-Up":"Flexiones abiertas",
+  "Chest Dip":"Fondos para pecho",
+  "Machine Chest Press":"Press de pecho en máquina",
+  "Pec Deck Fly":"Aperturas en máquina",
+  "Cable Crossover":"Cruces en polea",
+  "Low Cable Crossover":"Cruces en polea baja",
+  "Pull-Up":"Dominadas",
+  "Chin-Up":"Dominadas supinas",
+  "Barbell Row":"Remo con barra",
+  "Dumbbell Row":"Remo con mancuerna",
+  "Seated Cable Row":"Remo en polea sentado",
+  "Lat Pulldown":"Jalón al pecho",
+  "Wide Grip Lat Pulldown":"Jalón agarre ancho",
+  "Close Grip Lat Pulldown":"Jalón agarre cerrado",
+  "T-Bar Row":"Remo en T",
+  "Deadlift":"Peso muerto",
+  "Romanian Deadlift":"Peso muerto rumano",
+  "Stiff Leg Deadlift":"Peso muerto piernas rígidas",
+  "Hyperextension":"Hiperextensiones de espalda",
+  "Good Morning":"Buenos días con barra",
+  "Face Pull":"Jalón a la cara",
+  "Straight-Arm Pulldown":"Jalón con brazos rectos",
+  "Barbell Overhead Press":"Press militar con barra",
+  "Dumbbell Shoulder Press":"Press de hombros con mancuernas",
+  "Arnold Press":"Press Arnold",
+  "Lateral Raise":"Elevaciones laterales",
+  "Front Raise":"Elevaciones frontales",
+  "Bent-Over Lateral Raise":"Pájaros con mancuernas",
+  "Upright Row":"Remo al cuello",
+  "Shrug":"Encogimientos de hombros",
+  "Dumbbell Shrug":"Encogimientos con mancuernas",
+  "Barbell Shrug":"Encogimientos con barra",
+  "Cable Lateral Raise":"Elevaciones laterales en polea",
+  "Machine Shoulder Press":"Press de hombros en máquina",
+  "Barbell Curl":"Curl de bíceps con barra",
+  "Dumbbell Curl":"Curl de bíceps con mancuernas",
+  "Hammer Curl":"Curl martillo",
+  "Preacher Curl":"Curl en banco Scott",
+  "Concentration Curl":"Curl concentrado",
+  "Incline Dumbbell Curl":"Curl inclinado con mancuernas",
+  "Cable Curl":"Curl en polea",
+  "EZ-Bar Curl":"Curl con barra Z",
+  "Reverse Curl":"Curl inverso",
+  "Zottman Curl":"Curl Zottman",
+  "Tricep Dip":"Fondos para tríceps",
+  "Close Grip Bench Press":"Press cerrado para tríceps",
+  "Skull Crusher":"Rompe cráneos",
+  "Tricep Pushdown":"Extensión de tríceps en polea",
+  "Rope Pushdown":"Extensión en polea con cuerda",
+  "Overhead Tricep Extension":"Extensión de tríceps sobre cabeza",
+  "Diamond Push-Up":"Flexiones en diamante",
+  "Kickback":"Patada de tríceps",
+  "Dumbbell Tricep Extension":"Extensión de tríceps con mancuerna",
+  "Tricep Extension":"Extensión de tríceps",
+  "Squat":"Sentadilla",
+  "Barbell Squat":"Sentadilla con barra",
+  "Goblet Squat":"Sentadilla goblet",
+  "Sumo Squat":"Sentadilla sumo",
+  "Front Squat":"Sentadilla frontal",
+  "Hack Squat":"Sentadilla hack",
+  "Leg Press":"Prensa de piernas",
+  "Leg Extension":"Extensión de cuádriceps",
+  "Leg Curl":"Curl femoral",
+  "Lying Leg Curl":"Curl femoral tumbado",
+  "Standing Leg Curl":"Curl femoral de pie",
+  "Lunge":"Zancada",
+  "Walking Lunge":"Zancadas caminando",
+  "Bulgarian Split Squat":"Sentadilla búlgara",
+  "Step Up":"Subida al cajón",
+  "Glute Bridge":"Puente de glúteos",
+  "Hip Thrust":"Empuje de cadera",
+  "Calf Raise":"Elevación de gemelos",
+  "Seated Calf Raise":"Gemelos sentado",
+  "Standing Calf Raise":"Gemelos de pie",
+  "Donkey Kick":"Patada de glúteo",
+  "Cable Kickback":"Patada en polea",
+  "Fire Hydrant":"Abducción de cadera",
+  "Crunch":"Crunch abdominal",
+  "Sit-Up":"Abdominales",
+  "Plank":"Plancha",
+  "Side Plank":"Plancha lateral",
+  "Russian Twist":"Giro ruso",
+  "Leg Raise":"Elevación de piernas",
+  "Hanging Leg Raise":"Elevación de piernas colgado",
+  "Bicycle Crunch":"Crunch bicicleta",
+  "Mountain Climber":"Escalador",
+  "Ab Wheel Rollout":"Rueda abdominal",
+  "Cable Crunch":"Crunch en polea",
+  "Oblique Crunch":"Crunch oblicuo",
+  "V-Up":"Abdominales en V",
+  "Dead Bug":"Bicho muerto",
+  "Flutter Kick":"Patadas alternas",
+  "Hollow Body Hold":"Posición hueca",
+  "Running":"Carrera",
+  "Jumping Jacks":"Saltos de tijera",
+  "Burpee":"Burpee",
+  "Jump Rope":"Saltar a la cuerda",
+  "Box Jump":"Salto al cajón",
+  "High Knees":"Rodillas altas",
+  "Butt Kicks":"Talones al glúteo",
+  "Jump Squat":"Sentadilla con salto",
+  "Kettlebell Swing":"Swing con kettlebell",
+  "Turkish Get-Up":"Levantamiento turco",
+  "Farmer Walk":"Paseo del granjero",
+  "Battle Rope":"Cuerdas de batalla",
+  "Thruster":"Thruster",
+  "Power Clean":"Cargada de potencia",
+  "Clean and Jerk":"Cargada y envión",
+  "Snatch":"Arrancada",
+  "Muscle-Up":"Muscle-up",
+  "Dip":"Fondos en paralelas",
+  "Tricep Dips":"Fondos de tríceps",
+  "Push Up":"Flexiones",
+  "Pushup":"Flexiones",
+  "Bench Press":"Press de banca",
+  "Overhead Press":"Press sobre cabeza",
+  "Military Press":"Press militar",
+  "Shoulder Press":"Press de hombros",
+  "Hip Extension":"Extensión de cadera",
+  "Back Extension":"Extensión de espalda",
+  "Reverse Fly":"Pájaros inversos",
+  "Chest Fly":"Aperturas de pecho",
+  "Stiff-Leg Deadlift":"Peso muerto piernas rectas",
+  "Sumo Deadlift":"Peso muerto sumo",
+  "Trap Bar Deadlift":"Peso muerto con barra hexagonal",
+  "Single Leg Deadlift":"Peso muerto a una pierna",
+  "Nordic Hamstring Curl":"Curl nórdico",
+  "Glute Ham Raise":"Elevación glúteo-isquiotibial",
+  "Seated Row":"Remo sentado",
+  "One Arm Row":"Remo a un brazo",
+  "Cable Row":"Remo en polea",
+  "Chest Supported Row":"Remo con apoyo en pecho",
+  "Inverted Row":"Remo invertido",
+  "Pendlay Row":"Remo Pendlay",
+  "Meadows Row":"Remo Meadows",
+  "Seal Row":"Remo en banco (seal row)",
+  "Spider Curl":"Curl araña",
+  "Scott Curl":"Curl Scott",
+  "Drag Curl":"Drag curl",
+  "Cross Body Curl":"Curl cruzado",
+  "Wrist Curl":"Curl de muñeca",
+  "Reverse Wrist Curl":"Curl de muñeca inverso",
+};
+
+function translateEx(name){
+  if(!name)return name;
+  // Exact match
+  if(EX_TRANSLATIONS[name])return EX_TRANSLATIONS[name];
+  // Case-insensitive match
+  const lower=name.toLowerCase();
+  for(const [en,es] of Object.entries(EX_TRANSLATIONS)){
+    if(en.toLowerCase()===lower)return es;
+  }
+  // Partial match: replace key words
+  let result=name;
+  const partials={
+    "Barbell":"con barra","Dumbbell":"con mancuernas","Cable":"en polea",
+    "Machine":"en máquina","Kettlebell":"con kettlebell","Smith":"en máquina Smith",
+    "Incline":"inclinado","Decline":"declinado","Seated":"sentado","Standing":"de pie",
+    "Close Grip":"agarre cerrado","Wide Grip":"agarre ancho","Reverse":"inverso",
+    "Single Leg":"a una pierna","One Arm":"a un brazo","One-Arm":"a un brazo",
+  };
+  return result;
+}
+
+
 const supa=supabase.createClient(SUPA_URL,SUPA_KEY,{
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storage:window.localStorage}
 });
@@ -925,7 +1102,7 @@ function renderEjerciciosHoy(ruts){
     return '<div style="background:var(--card);border-radius:16px;padding:14px;border:1px solid var(--border);margin-bottom:10px">'
       +'<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">'
       +'<div style="width:56px;height:56px;border-radius:10px;overflow:hidden;background:var(--card2);flex-shrink:0">'+(img?'<img src="'+img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>')+'</div>'
-      +'<div style="flex:1"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;margin-bottom:5px">'+r.ejercicio_nombre+'</div>'
+      +'<div style="flex:1"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;margin-bottom:5px">'+translateEx(r.ejercicio_nombre)+'</div>'
       +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
       +'<div style="background:var(--card2);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--muted)"><b style="color:var(--text)">'+r.series+'</b> series</div>'
       +'<div style="background:var(--card2);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--muted)"><b style="color:var(--text)">'+r.reps+'</b> reps</div>'
@@ -1095,7 +1272,7 @@ function renderLib(){
   el.innerHTML=showing.map(e=>{
     const img=CDN+'exercises/'+e.id+'/0.jpg';
     const muscle=(e.primaryMuscles||[])[0]||e.category||'';
-    return '<div class="lib-card" onclick="openExDetail(\''+escJS(e.id)+'\',\''+escJS(e.name)+'\',\''+escJS(muscle)+'\',\''+escJS((e.primaryMuscles||[]).join(', '))+'\',\''+escJS((e.secondaryMuscles||[]).join(', '))+'\',\''+escJS((e.instructions||[]).join('|'))+'\')"><img class="lib-card-img" src="'+img+'" onerror="this.style.display=\'none\'" loading="lazy"><div class="lib-card-body"><div class="lib-card-name">'+e.name+'</div><div class="lib-card-muscle">'+muscle+'</div></div></div>';
+    return '<div class="lib-card" onclick="openExDetail(\''+escJS(e.id)+'\',\''+escJS(e.name)+'\',\''+escJS(muscle)+'\',\''+escJS((e.primaryMuscles||[]).join(', '))+'\',\''+escJS((e.secondaryMuscles||[]).join(', '))+'\',\''+escJS((e.instructions||[]).join('|'))+'\')"><img class="lib-card-img" src="'+img+'" onerror="this.style.display=\'none\'" loading="lazy"><div class="lib-card-body"><div class="lib-card-name">'+translateEx(e.name)+'</div><div class="lib-card-muscle">'+muscle+'</div></div></div>';
   }).join('');
 }
 
@@ -1103,7 +1280,7 @@ function openExDetail(id,name,muscle,muscles,secondary,instructions){
   const img=CDN+'exercises/'+id+'/0.jpg';
   const mediaEl=document.getElementById('ex-detail-media');
   mediaEl.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.innerHTML=\'🏋️\'">';
-  document.getElementById('ex-detail-name').textContent=name;
+  document.getElementById('ex-detail-name').textContent=translateEx(name);
   document.getElementById('ex-detail-muscles').textContent=muscles||muscle;
   const secEl=document.getElementById('ex-sec-secondary');
   const secText=document.getElementById('ex-detail-secondary');
@@ -1510,7 +1687,7 @@ async function loadAlumnoWeeklyPlan(email){
         +'<button onclick="openAgregarDia(\''+escJS(email)+'\',\''+escJS(nombreAlumno)+'\',\''+dia+'\')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:\'Barlow\',sans-serif">+ Agregar</button>'
         +(hasRutina?'<button onclick="editRutinaDia(\''+escJS(email)+'\',\''+dia+'\')" style="background:rgba(52,152,219,.15);color:#3498db;border:1px solid rgba(52,152,219,.3);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">✏️</button>':'')+'  '+(hasRutina?'<button onclick="deleteRutinasDia(\''+escJS(email)+'\',\''+dia+'\')" style="background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">🗑</button>':'')
         +'</div></div>'
-        +(hasRutina?'<div style="display:flex;flex-wrap:wrap;gap:5px">'+exs.slice(0,5).map(e=>'<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">'+e.ejercicio_nombre+'</div>').join('')+(exs.length>5?'<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">+'+( exs.length-5)+' más</div>':'')+'</div>':'')
+        +(hasRutina?'<div style="display:flex;flex-wrap:wrap;gap:5px">'+exs.slice(0,5).map(e=>'<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">'+translateEx(e.ejercicio_nombre)+'</div>').join('')+(exs.length>5?'<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">+'+( exs.length-5)+' más</div>':'')+'</div>':'')
         +'</div>';
     }).join('');
   }catch(e){
@@ -1901,7 +2078,7 @@ function renderTplEjercicios(){
   if(!tplEjercicios.length){el.innerHTML='<div style="font-size:13px;color:var(--muted)">Agrega ejercicios desde la biblioteca.</div>';return;}
   el.innerHTML=tplEjercicios.map((ex,i)=>'<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center">'
     +(ex.img?'<img src="'+ex.img+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">':'<div style="width:44px;height:44px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏋️</div>')
-    +'<div style="flex:1;min-width:0"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ex.name+'</div>'
+    +'<div style="flex:1;min-width:0"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+translateEx(ex.name)+'</div>'
     +'<div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap">'
     +'<input type="number" value="'+(ex.series||3)+'" min="1" max="10" style="width:44px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios['+i+'].series=parseInt(this.value)||3" title="Series">'
     +'<input value="'+(ex.reps||'10')+'" style="width:48px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px;font-size:12px;color:var(--text)" onchange="tplEjercicios['+i+'].reps=this.value" title="Reps">'
@@ -1972,7 +2149,7 @@ function renderEjerciciosSeleccionados(){
   if(!rutinaEjercicios.length){el.innerHTML='<div style="font-size:13px;color:var(--muted)">Agrega ejercicios desde la biblioteca.</div>';return;}
   el.innerHTML=rutinaEjercicios.map((ex,i)=>'<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;cursor:pointer" onclick="configEjercicio('+i+')">'
     +(ex.img?'<img src="'+ex.img+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">':'<div style="width:44px;height:44px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏋️</div>')
-    +'<div style="flex:1;min-width:0"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ex.name+'</div>'
+    +'<div style="flex:1;min-width:0"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+translateEx(ex.name)+'</div>'
     +'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+ex.series+' × '+ex.reps+' · '+ex.descanso+'</div></div>'
     +'<div style="display:flex;gap:6px">'
     +'<button onclick="event.stopPropagation();configEjercicio('+i+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer">⚙️</button>'
@@ -2055,7 +2232,7 @@ function renderLibRutina(){
     return '<div onclick="toggleLibRutinaSelect(\''+escJS(e.id)+'\',\''+escJS(e.name)+'\',\''+escJS(img_url(e.id))+'\',\''+escJS((e.primaryMuscles||[])[0]||e.category||'')+'\',this)" style="background:var(--card);border-radius:14px;border:2px solid '+(isSelected?'var(--green)':'var(--border)')+';overflow:hidden;cursor:pointer;position:relative">'
       +(isSelected?'<div style="position:absolute;top:6px;right:6px;width:22px;height:22px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;z-index:1">✓</div>':'')
       +'<img src="'+img_url(e.id)+'" style="width:100%;height:100px;object-fit:cover;background:var(--card2)" loading="lazy" onerror="this.style.display=\'none\'">'
-      +'<div style="padding:8px 10px 10px"><div class="lib-card-name">'+e.name+'</div><div class="lib-card-muscle">'+((e.primaryMuscles||[])[0]||e.category||'')+'</div></div></div>';
+      +'<div style="padding:8px 10px 10px"><div class="lib-card-name">'+translateEx(e.name)+'</div><div class="lib-card-muscle">'+((e.primaryMuscles||[])[0]||e.category||'')+'</div></div></div>';
   }).join('');
 }
 
