@@ -1173,13 +1173,16 @@ const MUSCLE_GROUP_MAP={chest:['chest'],back:['lats','middle back','lower back',
 
 async function init(){
   loadSavedTemplateEdits();
-  // Listen to auth state changes - this fires on every page load with existing session
+  // PRIMARY: use onAuthStateChange which catches INITIAL_SESSION on page reload
   supa.auth.onAuthStateChange(async (event, session)=>{
-    if(event==='SIGNED_IN'&&session&&!currentUser){
-      currentUser=session.user;
-      await loadProfile();
-      goScreen('s-inicio');
-      afterLogin();
+    console.log('Auth event:', event, !!session);
+    if((event==='INITIAL_SESSION'||event==='SIGNED_IN')&&session){
+      if(!currentUser){
+        currentUser=session.user;
+        await loadProfile();
+        goScreen('s-inicio');
+        afterLogin();
+      }
     }
     if(event==='SIGNED_OUT'){
       currentUser=null;currentProfile=null;
@@ -1189,14 +1192,6 @@ async function init(){
       currentUser=session.user;
     }
   });
-  // Also try getSession directly for immediate restore
-  const {data:{session}}=await supa.auth.getSession();
-  if(session&&!currentUser){
-    currentUser=session.user;
-    await loadProfile();
-    goScreen('s-inicio');
-    afterLogin();
-  }
 }
 
 async function doLogin(){
@@ -1557,8 +1552,22 @@ async function loadFases(){
   const container=document.getElementById('fases-container');
   const label=document.getElementById('fases-prog-label');
   if(!container)return;
+  container.innerHTML='<div class="lib-loading"><div class="lib-spinner"></div><span>Cargando programa...</span></div>';
 
-  const {data:programas}=await supa.from('fases_programa').select('*').eq('alumno_email',currentUser.email).eq('activo',true).limit(1);
+  let programas=null;
+  try{
+    const {data,error}=await supa.from('fases_programa').select('*').eq('alumno_email',currentUser.email).eq('activo',true).limit(1);
+    if(error)throw error;
+    programas=data;
+  }catch(e){
+    container.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:12px">📋</div>
+      <div style="margin-bottom:8px">No se pudo cargar el programa</div>
+      <div style="font-size:12px;color:var(--muted2)">${e.message}</div>
+      <button onclick="loadFases()" style="margin-top:16px;background:var(--green);color:#fff;border:none;border-radius:10px;padding:10px 20px;cursor:pointer;font-family:'Barlow',sans-serif">Reintentar</button>
+    </div>`;
+    return;
+  }
   const programa=programas?.[0];
 
   if(!programa){
@@ -3979,7 +3988,13 @@ async function applyTemplateToAlumno(templateId, alumnoEmail, alumnoNombre){
   const {error}=await supa.from('rutinas').insert(rows);
   if(error){showToast('⚠️ Error al aplicar template','error');return;}
   showToast('✓ Template "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
-  goScreen('s-entrenador');
+  // If we have a current alumno context, go back to their detail
+  if(currentAlumnoEmail===alumnoEmail){
+    goScreen('s-alumno-detail');
+    loadAlumnoWeeklyPlan(alumnoEmail);
+  } else {
+    goScreen('s-entrenador');
+  }
 }
 
 function enviarMensaje(email,nombre){
