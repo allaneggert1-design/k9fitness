@@ -86,6 +86,39 @@ textarea.input-field{resize:none}
 .tpl-emoji{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
 .tpl-emoji.active{background:var(--green-glow);border:2px solid var(--green)}
 </style>
+<!--
+=== SQL NECESSÁRIO NO SUPABASE (executar uma vez) ===
+
+-- Tabela anamnese
+CREATE TABLE IF NOT EXISTS anamnese (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  alumno_email text UNIQUE NOT NULL,
+  objetivo text, experiencia text, dias text,
+  lesiones text, condiciones text, medicacion text,
+  evitar text, notas text,
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Tabela ficha_entrenador
+CREATE TABLE IF NOT EXISTS ficha_entrenador (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  alumno_email text UNIQUE NOT NULL,
+  notas_entrenador text,
+  objetivo_ajustado text,
+  updated_at timestamptz DEFAULT now()
+);
+
+-- RLS: desabilitar em todas as tabelas relevantes
+ALTER TABLE rutinas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE progreso DISABLE ROW LEVEL SECURITY;
+ALTER TABLE mensajes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE records_personales DISABLE ROW LEVEL SECURITY;
+ALTER TABLE anamnese DISABLE ROW LEVEL SECURITY;
+ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
+
+=== FIM SQL ===
+-->
 </head>
 <body>
 <div id="app">
@@ -372,7 +405,7 @@ textarea.input-field{resize:none}
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
         <button onclick="navTo('mensajes')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;font-family:'Barlow',sans-serif;width:100%;text-align:left"><span style="font-size:18px">💬</span><span style="font-size:14px;font-weight:500;color:var(--text)">Mensajes</span><span style="margin-left:auto;color:var(--muted)">›</span></button>
-        <button onclick="goScreen('s-anamnese')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;font-family:'Barlow',sans-serif;width:100%;text-align:left"><span style="font-size:18px">📋</span><span style="font-size:14px;font-weight:500;color:var(--text)">Mi ficha de salud</span><span style="margin-left:auto;color:var(--muted)">›</span></button>
+        <button onclick="goScreen('s-anamnese');loadAnamnese()" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;font-family:'Barlow',sans-serif;width:100%;text-align:left"><span style="font-size:18px">📋</span><span style="font-size:14px;font-weight:500;color:var(--text)">Mi ficha de salud</span><span style="margin-left:auto;color:var(--muted)">›</span></button>
         <button onclick="goScreen('s-edit-perfil')" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;font-family:'Barlow',sans-serif;width:100%;text-align:left"><span style="font-size:18px">✏️</span><span style="font-size:14px;font-weight:500;color:var(--text)">Editar perfil</span><span style="margin-left:auto;color:var(--muted)">›</span></button>
         <button onclick="confirmLogout()" style="display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid rgba(192,57,43,.3);border-radius:14px;padding:14px;cursor:pointer;font-family:'Barlow',sans-serif;width:100%;text-align:left"><span style="font-size:18px">🚪</span><span style="font-size:14px;font-weight:500;color:#e74c3c">Cerrar sesión</span><span style="margin-left:auto;color:var(--muted)">›</span></button>
       </div>
@@ -701,17 +734,10 @@ function goScreen(id){
 }
 
 function navTo(tab){
-  const alumno={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',perfil:'s-perfil',mensajes:'s-mensajes'};
-  const trainer={templates:'s-templates'};
-  const map={...alumno,...trainer};
+  const map={inicio:'s-inicio',entrenar:'s-entrenar',biblioteca:'s-biblioteca',progreso:'s-progreso',perfil:'s-perfil',mensajes:'s-mensajes',templates:'s-templates'};
   if(map[tab])goScreen(map[tab]);
-  if(tab==='inicio')loadInicio();
-  else if(tab==='entrenar')loadEntrenar();
-  else if(tab==='biblioteca')loadBiblioteca();
-  else if(tab==='progreso')loadProgreso();
-  else if(tab==='perfil')loadPerfil();
-  else if(tab==='mensajes')loadMensajes();
-  else if(tab==='templates')loadTemplates();
+  const loaders={inicio:loadInicio,entrenar:loadEntrenar,biblioteca:loadBiblioteca,progreso:loadProgreso,perfil:loadPerfil,mensajes:loadMensajes,templates:loadTemplates};
+  if(loaders[tab])try{loaders[tab]();}catch(e){console.error('navTo '+tab,e);}
 }
 
 function showToast(msg,type='ok'){
