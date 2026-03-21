@@ -577,7 +577,8 @@ ALTER TABLE ficha_entrenador DISABLE ROW LEVEL SECURITY;
   <div class="topbar"><div class="topbar-row"><div class="back-btn" onclick="goScreen('s-alumno-detail')">←</div><h1>📋 <span>Aplicar Rutina Base</span></h1></div></div>
   <div class="scroll">
     <div style="padding:14px 20px 0">
-      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--green-light);display:flex;align-items:center;gap:8px"><span>👤</span><span>Para: <b id="rba-alumno-nombre">—</b></span></div>
+      <div style="background:var(--green-glow);border:1px solid rgba(91,168,50,.2);border-radius:12px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--green-light);display:flex;align-items:center;gap:8px"><span>👤</span><span>Para: <b id="rba-alumno-nombre">—</b></span></div>
+      <div id="rba-dia-info" style="display:none;background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#f39c12;font-weight:600"></div>
       <div id="rba-custom-section" style="margin-bottom:8px"></div>
       <div class="sec-title">Predefinidas K9</div>
       <div id="rba-predefined-list" style="margin-bottom:20px"></div>
@@ -1506,7 +1507,7 @@ async function loadAlumnoWeeklyPlan(email){
         +(nombres.length?'<div style="font-size:11px;color:var(--green-light)">'+nombres.join(', ')+'</div>':'<div style="font-size:11px;color:var(--muted2)">Sin entrenamiento</div>')
         +'</div></div>'
         +'<div style="display:flex;gap:6px">'
-        +'<button onclick="openCrearRutina(\''+escJS(email)+'\',\''+escJS(nombreAlumno)+'\',\''+dia+'\')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:\'Barlow\',sans-serif">+ Agregar</button>'
+        +'<button onclick="openAgregarDia(\''+escJS(email)+'\',\''+escJS(nombreAlumno)+'\',\''+dia+'\')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:\'Barlow\',sans-serif">+ Agregar</button>'
         +(hasRutina?'<button onclick="deleteRutinasDia(\''+escJS(email)+'\',\''+dia+'\')" style="background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">🗑</button>':'')
         +'</div></div>'
         +(hasRutina?'<div style="display:flex;flex-wrap:wrap;gap:5px">'+exs.slice(0,5).map(e=>'<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">'+e.ejercicio_nombre+'</div>').join('')+(exs.length>5?'<div style="background:var(--card2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--muted)">+'+( exs.length-5)+' más</div>':'')+'</div>':'')
@@ -1658,7 +1659,12 @@ function renderApplyTemplate(t,idxOrId,type){
   if(title)title.textContent=t.emoji+' '+t.name;
   const el=document.getElementById('apply-template-content');
   if(!el)return;
-  el.innerHTML='<div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Selecciona el alumno para aplicar esta rutina base.</div>'
+  // Use forced day if coming from modal, else show selector
+  const forcedDia=window._rbaForceDia||'';
+  const diasOpts=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const diaSelectHtml='<div style="margin-bottom:16px"><div class="input-label" style="margin-bottom:6px">Día de la semana</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">'+diasOpts.map(d=>'<div onclick="selectApplyDia(this,\''+d+'\')" class="apply-dia-btn" style="flex-shrink:0;padding:7px 13px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Barlow Condensed\',sans-serif;text-transform:uppercase;'+(d===(forcedDia||t.dia)?'background:var(--green);color:#fff;border:1px solid var(--green)':'background:var(--card);color:var(--muted);border:1px solid var(--border)')+'" data-dia="'+d+'">'+d.slice(0,3)+'</div>').join('')+'</div></div>';
+  window._applyDia=forcedDia||t.dia;
+  el.innerHTML=diaSelectHtml
     +'<div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:16px">'
     +(t.ejercicios||[]).map((ex,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:10px 0;'+(i<t.ejercicios.length-1?'border-bottom:1px solid var(--border)':'')+'">'
     +'<div style="width:28px;height:28px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">'+(i+1)+'</div>'
@@ -1684,7 +1690,8 @@ async function applyTemplateToAlumno(tJson,alumnoEmail,alumnoNombre){
   let t;
   try{t=JSON.parse(tJson);}catch(e){return;}
   if(!confirm('¿Aplicar "'+t.name+'" a '+alumnoNombre+' para el '+t.dia+'?'))return;
-  const rows=(t.ejercicios||[]).map((ex,i)=>({alumno_email:alumnoEmail,nombre_rutina:t.name,dia:t.dia,ejercicio_nombre:ex.name,series:ex.series||3,reps:String(ex.reps||'10'),descanso:ex.descanso||'60s',peso_kg:null,observaciones:ex.obs||null,orden:i+1}));
+  const diaFinal=window._applyDia||t.dia;
+  const rows=(t.ejercicios||[]).map((ex,i)=>({alumno_email:alumnoEmail,nombre_rutina:t.name,dia:diaFinal,ejercicio_nombre:ex.name,series:ex.series||3,reps:String(ex.reps||'10'),descanso:ex.descanso||'60s',peso_kg:null,observaciones:ex.obs||null,orden:i+1}));
   const {error}=await supa.from('rutinas').insert(rows);
   if(error){showToast('⚠️ Error: '+error.message,'error');return;}
   showToast('✓ "'+t.name+'" aplicado a '+alumnoNombre+' 🎉');
@@ -1711,7 +1718,7 @@ function openRutinasBase(){
   const section=document.getElementById('rba-custom-section');
   if(section){
     if(!customTemplates.length){
-      section.innerHTML='<div class="sec-title">Mis rutinas base</div><div style="font-size:13px;color:var(--muted);padding:8px 0 12px">No tienes rutinas base creadas. <button onclick="goScreen(\'s-crear-template\')" style="background:none;border:none;color:var(--green-light);font-size:13px;cursor:pointer;font-weight:600">→ Crear una</button></div>';
+      section.innerHTML='<div class="sec-title">Mis rutinas base</div><div style="font-size:13px;color:var(--muted);padding:8px 0 12px">No tienes rutinas base creadas. <button onclick="goScreen(&quot;s-crear-template&quot;)" style="background:none;border:none;color:var(--green-light);font-size:13px;cursor:pointer;font-weight:600">&rarr; Crear una</button></div>';
     } else {
       section.innerHTML='<div class="sec-title">Mis rutinas base</div><div style="margin-bottom:16px">'+customTemplates.map((t,i)=>renderRBACard(t,i,'custom')).join('')+'</div>';
     }
@@ -1739,7 +1746,8 @@ async function applyRBAToCurrentAlumno(typeAndId){
   else t=WORKOUT_TEMPLATES.find(x=>x.id===id);
   if(!t){showToast('⚠️ Rutina no encontrada','error');return;}
   if(!confirm('¿Aplicar "'+t.name+'" a '+currentAlumnoNombre+' para el '+t.dia+'?'))return;
-  const rows=(t.ejercicios||[]).map((ex,i)=>({alumno_email:currentAlumnoEmail,nombre_rutina:t.name,dia:t.dia,ejercicio_nombre:ex.name,series:ex.series||3,reps:String(ex.reps||'10'),descanso:ex.descanso||'60s',peso_kg:null,observaciones:ex.obs||null,orden:i+1}));
+  const diaFinalRBA=window._rbaForceDia||window._applyDia||t.dia;
+  const rows=(t.ejercicios||[]).map((ex,i)=>({alumno_email:currentAlumnoEmail,nombre_rutina:t.name,dia:diaFinalRBA,ejercicio_nombre:ex.name,series:ex.series||3,reps:String(ex.reps||'10'),descanso:ex.descanso||'60s',peso_kg:null,observaciones:ex.obs||null,orden:i+1}));
   const {error}=await supa.from('rutinas').insert(rows);
   if(error){showToast('⚠️ Error: '+error.message,'error');return;}
   showToast('✓ "'+t.name+'" asignado a '+currentAlumnoNombre+' 🎉');
@@ -2055,5 +2063,88 @@ function quickTip(text){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+
+// ─── MODAL AGREGAR DIA ────────────────────────────────────────────────────────
+let _modalDia='',_modalEmail='',_modalNombre='';
+
+function openAgregarDia(email,nombre,dia){
+  _modalEmail=email;_modalNombre=nombre;_modalDia=dia;
+  const label=document.getElementById('modal-dia-label');
+  if(label)label.textContent=dia;
+  const modal=document.getElementById('modal-agregar-dia');
+  if(modal)modal.style.display='flex';
+}
+
+function closeAgregarDia(){
+  const modal=document.getElementById('modal-agregar-dia');
+  if(modal)modal.style.display='none';
+}
+
+function openCrearRutinaFromModal(){
+  closeAgregarDia();
+  openCrearRutina(_modalEmail,_modalNombre,_modalDia);
+}
+
+function openRutinasBaseFromModal(){
+  closeAgregarDia();
+  // Set current alumno context then open rutinas base with day pre-selected
+  currentAlumnoEmail=_modalEmail;
+  currentAlumnoNombre=_modalNombre;
+  openRutinasBaseConDia(_modalDia);
+}
+
+function selectApplyDia(el,dia){
+  window._applyDia=dia;
+  window._rbaForceDia=dia;
+  document.querySelectorAll('.apply-dia-btn').forEach(b=>{
+    b.style.background='var(--card)';b.style.color='var(--muted)';b.style.border='1px solid var(--border)';
+  });
+  el.style.background='var(--green)';el.style.color='#fff';el.style.border='1px solid var(--green)';
+}
+
+function openRutinasBaseConDia(dia){
+  window._rbaForceDia=dia;
+  const nombreEl=document.getElementById('rba-alumno-nombre');
+  if(nombreEl)nombreEl.textContent=currentAlumnoNombre;
+  // Show day selector in the screen
+  const diaInfo=document.getElementById('rba-dia-info');
+  if(diaInfo){diaInfo.textContent='Día: '+dia;diaInfo.style.display='block';}
+  customTemplates=JSON.parse(localStorage.getItem('k9_custom_templates')||'[]');
+  const section=document.getElementById('rba-custom-section');
+  if(section){
+    if(!customTemplates.length){
+      section.innerHTML='<div class="sec-title">Mis rutinas base</div><div style="font-size:13px;color:var(--muted);padding:8px 0 12px">No tienes rutinas base creadas. <button onclick="irACrearTemplate()" style="background:none;border:none;color:var(--green-light);font-size:13px;cursor:pointer;font-weight:600">&rarr; Crear una</button></div>';
+    } else {
+      section.innerHTML='<div class="sec-title">Mis rutinas base</div><div style="margin-bottom:16px">'+customTemplates.map((t,i)=>renderRBACard(t,i,'custom')).join('')+'</div>';
+    }
+  }
+  const pred=document.getElementById('rba-predefined-list');
+  if(pred)pred.innerHTML=WORKOUT_TEMPLATES.map(t=>renderRBACard(t,t.id,'predefined')).join('');
+  goScreen('s-rutinas-base-alumno');
+}
+
 window.addEventListener('DOMContentLoaded',init);
-</script></body></html>
+
+function irACrearTemplate(){goScreen('s-crear-template');}
+</script>
+<!-- MODAL AGREGAR DIA -->
+<div id="modal-agregar-dia" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:max(24px,env(safe-area-inset-bottom))">
+  <div style="background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:24px 20px">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 20px"></div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px" id="modal-dia-label">Lunes</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;margin-bottom:20px">Agregar entrenamiento</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <button onclick="openCrearRutinaFromModal()" style="display:flex;align-items:center;gap:14px;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+        <div style="font-size:28px">✏️</div>
+        <div><div style="font-size:15px;font-weight:700;color:#fff">Crear rutina personalizada</div><div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:2px">Elige ejercicios de la biblioteca</div></div>
+      </button>
+      <button onclick="openRutinasBaseFromModal()" style="display:flex;align-items:center;gap:14px;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:16px;padding:16px;cursor:pointer;text-align:left;font-family:'Barlow',sans-serif;width:100%">
+        <div style="font-size:28px">📋</div>
+        <div><div style="font-size:15px;font-weight:700;color:#f39c12">Usar rutina base</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Predefinidas K9 o las tuyas</div></div>
+      </button>
+    </div>
+    <button onclick="closeAgregarDia()" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;font-family:'Barlow',sans-serif;font-size:15px;color:var(--muted);cursor:pointer">Cancelar</button>
+  </div>
+</div>
+
+</body></html>
